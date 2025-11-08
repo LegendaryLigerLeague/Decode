@@ -58,9 +58,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * we will also need to adjust the "PIDF" coefficients with some that are a better fit for our application.
  */
 
-@TeleOp(name = "StarterBotTeleop", group = "StarterBot")
+@TeleOp(name = "StarterBotTeleop Modified", group = "StarterBot")
 //@Disabled
-public class StarterBotTeleop extends OpMode {
+public class StarterBotTeleopModified extends OpMode {
     final double FEED_TIME_SECONDS = 0.50; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
@@ -73,6 +73,8 @@ public class StarterBotTeleop extends OpMode {
      */
     final double LAUNCHER_TARGET_VELOCITY = 1125;
     final double LAUNCHER_MIN_VELOCITY = 1075;
+
+    final double SLOWDOWN_MODE_MULTIPLIER = 0.50;
 
     // Declare OpMode members.
     private DcMotor leftDrive = null;
@@ -111,6 +113,8 @@ public class StarterBotTeleop extends OpMode {
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftPower;
     double rightPower;
+
+    double launchSpeedMultiplier = 1.0;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -190,6 +194,7 @@ public class StarterBotTeleop extends OpMode {
      */
     @Override
     public void start() {
+
     }
 
     /*
@@ -206,16 +211,22 @@ public class StarterBotTeleop extends OpMode {
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
          * more complex maneuvers.
          */
-        arcadeDrive(-gamepad1.left_stick_y, gamepad1.right_stick_x);
+        arcadeDrive(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.right_trigger > 0);
 
         /*
          * Here we give the user control of the speed of the launcher motor without automatically
          * queuing a shot.
          */
         if (gamepad1.y) {
-            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
         } else if (gamepad1.b) { // stop flywheel
             launcher.setVelocity(STOP_SPEED);
+        }
+
+        if (gamepad1.dpadUpWasPressed()) {
+            launchSpeedMultiplier += 0.05;
+        } else if (gamepad1.dpadDownWasPressed()) {
+            launchSpeedMultiplier -= 0.05;
         }
 
         /*
@@ -229,6 +240,7 @@ public class StarterBotTeleop extends OpMode {
         telemetry.addData("State", launchState);
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         telemetry.addData("motorSpeed", launcher.getVelocity());
+        telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
 
     }
 
@@ -239,9 +251,13 @@ public class StarterBotTeleop extends OpMode {
     public void stop() {
     }
 
-    void arcadeDrive(double forward, double rotate) {
+    void arcadeDrive(double forward, double rotate, boolean isSlowdownMode) {
         leftPower = forward + rotate;
         rightPower = forward - rotate;
+        if (isSlowdownMode) {
+            leftPower = leftPower * SLOWDOWN_MODE_MULTIPLIER;
+            rightPower = rightPower * SLOWDOWN_MODE_MULTIPLIER;
+        }
 
         /*
          * Send calculated power to wheels
@@ -258,8 +274,8 @@ public class StarterBotTeleop extends OpMode {
                 }
                 break;
             case SPIN_UP:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY) {
+                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
+                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY * launchSpeedMultiplier) {
                     launchState = LaunchState.LAUNCH;
                 }
                 break;
