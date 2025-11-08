@@ -43,36 +43,19 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-/*
- * This file includes a teleop (driver-controlled) file for the goBILDA® StarterBot for the
- * 2025-2026 FIRST® Tech Challenge season DECODE™. It leverages a differential/Skid-Steer
- * system for robot mobility, one high-speed motor driving two "launcher wheels", and two servos
- * which feed that launcher.
- *
- * Likely the most niche concept we'll use in this example is closed-loop motor velocity control.
- * This control method reads the current speed as reported by the motor's encoder and applies a varying
- * amount of power to reach, and then hold a target velocity. The FTC SDK calls this control method
- * "RUN_USING_ENCODER". This contrasts to the default "RUN_WITHOUT_ENCODER" where you control the power
- * applied to the motor directly.
- * Since the dynamics of a launcher wheel system varies greatly from those of most other FTC mechanisms,
- * we will also need to adjust the "PIDF" coefficients with some that are a better fit for our application.
- */
 
-@TeleOp(name = "StarterBotTeleop", group = "StarterBot")
+@TeleOp(name = "StarterBotTeleop Modified", group = "StarterBot")
 //@Disabled
 public class StarterBotTeleop extends OpMode {
     final double FEED_TIME_SECONDS = 0.50; //The feeder servos run this long when a shot is requested.
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
 
-    /*
-     * When we control our launcher motor, we are using encoders. These allow the control system
-     * to read the current speed of the motor and apply more or less power to keep it at a constant
-     * velocity. Here we are setting the target, and minimum velocity that the launcher should run
-     * at. The minimum velocity is a threshold for determining when to fire.
-     */
+    final double LAUNCHER_MOTOR_TIMEOUT = 3;
     final double LAUNCHER_TARGET_VELOCITY = 1125;
     final double LAUNCHER_MIN_VELOCITY = 1075;
+
+    final double SLOWDOWN_MODE_MULTIPLIER = 0.50;
 
     // Declare OpMode members.
     private DcMotor leftDrive = null;
@@ -82,23 +65,9 @@ public class StarterBotTeleop extends OpMode {
     private CRServo rightFeeder = null;
 
     ElapsedTime feederTimer = new ElapsedTime();
+    ElapsedTime launcherTimer = new ElapsedTime();
 
-    /*
-     * TECH TIP: State Machines
-     * We use a "state machine" to control our launcher motor and feeder servos in this program.
-     * The first step of a state machine is creating an enum that captures the different "states"
-     * that our code can be in.
-     * The core advantage of a state machine is that it allows us to continue to loop through all
-     * of our code while only running specific code when it's necessary. We can continuously check
-     * what "State" our machine is in, run the associated code, and when we are done with that step
-     * move on to the next state.
-     * This enum is called the "LaunchState". It reflects the current condition of the shooter
-     * motor and we move through the enum when the user asks our code to fire a shot.
-     * It starts at idle, when the user requests a launch, we enter SPIN_UP where we get the
-     * motor up to speed, once it meets a minimum speed then it starts and then ends the launch process.
-     * We can use higher level code to cycle through these states. But this allows us to write
-     * functions and autonomous routines in a way that avoids loops within loops, and "waits".
-     */
+
     private enum LaunchState {
         IDLE,
         SPIN_UP,
@@ -111,6 +80,8 @@ public class StarterBotTeleop extends OpMode {
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftPower;
     double rightPower;
+
+    double launchSpeedMultiplier = 1.0;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -137,8 +108,8 @@ public class StarterBotTeleop extends OpMode {
          * Note: The settings here assume direct drive on left and right wheels. Gear
          * Reduction or 90 Deg drives may require direction flips
          */
-        leftDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightDrive.setDirection(DcMotor.Direction.REVERSE);
 
         /*
          * Here we set our launcher to the RUN_USING_ENCODER runmode.
@@ -190,6 +161,7 @@ public class StarterBotTeleop extends OpMode {
      */
     @Override
     public void start() {
+
     }
 
     /*
@@ -206,16 +178,23 @@ public class StarterBotTeleop extends OpMode {
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
          * more complex maneuvers.
          */
-        arcadeDrive(-gamepad1.left_stick_y, gamepad1.right_stick_x);
+        arcadeDrive(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.right_trigger <= 0);
 
         /*
          * Here we give the user control of the speed of the launcher motor without automatically
          * queuing a shot.
          */
         if (gamepad1.y) {
-            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-        } else if (gamepad1.b) { // stop flywheel
+            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
+        } else if (gamepad1.b || launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
+            launcherTimer.reset(); // so we don't keep stopping it while trying to start next launch`
             launcher.setVelocity(STOP_SPEED);
+        }
+
+        if (gamepad1.dpadUpWasPressed() && gamepad1.left_bumper) {
+            launchSpeedMultiplier += 0.05;
+        } else if (gamepad1.dpadDownWasPressed() && gamepad1.left_bumper) {
+            launchSpeedMultiplier -= 0.05;
         }
 
         /*
@@ -229,6 +208,7 @@ public class StarterBotTeleop extends OpMode {
         telemetry.addData("State", launchState);
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         telemetry.addData("motorSpeed", launcher.getVelocity());
+        telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
 
     }
 
@@ -239,9 +219,13 @@ public class StarterBotTeleop extends OpMode {
     public void stop() {
     }
 
-    void arcadeDrive(double forward, double rotate) {
+    void arcadeDrive(double forward, double rotate, boolean isSlowdownMode) {
         leftPower = forward + rotate;
         rightPower = forward - rotate;
+        if (isSlowdownMode) {
+            leftPower = leftPower * SLOWDOWN_MODE_MULTIPLIER;
+            rightPower = rightPower * SLOWDOWN_MODE_MULTIPLIER;
+        }
 
         /*
          * Send calculated power to wheels
@@ -258,8 +242,8 @@ public class StarterBotTeleop extends OpMode {
                 }
                 break;
             case SPIN_UP:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY) {
+                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
+                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY * launchSpeedMultiplier) {
                     launchState = LaunchState.LAUNCH;
                 }
                 break;
@@ -267,6 +251,7 @@ public class StarterBotTeleop extends OpMode {
                 leftFeeder.setPower(FULL_SPEED);
                 rightFeeder.setPower(FULL_SPEED);
                 feederTimer.reset();
+                launcherTimer.reset();
                 launchState = LaunchState.LAUNCHING;
                 break;
             case LAUNCHING:
