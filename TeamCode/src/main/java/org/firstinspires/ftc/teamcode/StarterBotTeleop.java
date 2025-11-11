@@ -178,7 +178,7 @@ public class StarterBotTeleop extends OpMode {
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
          * more complex maneuvers.
          */
-        arcadeDrive(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.right_trigger <= 0);
+        arcadeDrive(-gamepad1.left_stick_y, -gamepad1.right_stick_x, gamepad1.right_trigger <= 0);
 
         /*
          * Here we give the user control of the speed of the launcher motor without automatically

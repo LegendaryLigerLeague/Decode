@@ -62,9 +62,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="StarterBotAuto Shoot&Move", group="StarterBot")
+@Autonomous(name="StarterBotAuto MoveOnly", group="StarterBot")
 //@Disabled
-public class StarterBotAuto extends OpMode
+public class StarterBotAutoNoShoot extends OpMode
 {
 
     final double FEED_TIME = 0.30; //Was originally 0.20 in provided code. Needed more time to ensure it launches.
@@ -182,7 +182,7 @@ public class StarterBotAuto extends OpMode
          * Later in our code, we will progress through the state machine by moving to other enum members.
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
-        autonomousState = AutonomousState.LAUNCH;
+        autonomousState = AutonomousState.DRIVING_OFF_LINE;
         launchState = LaunchState.IDLE;
 
 
@@ -363,7 +363,7 @@ public class StarterBotAuto extends OpMode
                 break;
 
             case DRIVING_OFF_LINE:
-                if(drive(DRIVE_SPEED, -30, DistanceUnit.INCH, 1)){
+                if(drive(DRIVE_SPEED, -26, DistanceUnit.INCH, 1)){
                     autonomousState = AutonomousState.COMPLETE;
                 }
                 break;
