@@ -68,6 +68,7 @@ public class StarterBotAuto extends OpMode
 {
 
     final double FEED_TIME = 0.30; //Was originally 0.20 in provided code. Needed more time to ensure it launches.
+    final double REVERSE_FEED_SECONDS = 0.20;
 
     /*
      * When we control our launcher motor, we are using encoders. These allow the control system
@@ -136,6 +137,7 @@ public class StarterBotAuto extends OpMode
         IDLE,
         PREPARE,
         LAUNCH,
+        REVERSE_FEED
     }
 
     /*
@@ -420,14 +422,23 @@ public class StarterBotAuto extends OpMode
                 break;
             case LAUNCH:
                 if (feederTimer.seconds() > FEED_TIME) {
+                    leftFeeder.setPower(-1);
+                    rightFeeder.setPower(-1);
+                    launchState = LaunchState.REVERSE_FEED;
+                    feederTimer.reset();
+                }
+                break;
+            case REVERSE_FEED:
+                if (feederTimer.seconds() > REVERSE_FEED_SECONDS) {
                     leftFeeder.setPower(0);
                     rightFeeder.setPower(0);
 
                     if(shotTimer.seconds() > TIME_BETWEEN_SHOTS){
                         launchState = LaunchState.IDLE;
-                        return true;
-                    }
+                        return true;                    }
                 }
+                break;
+
         }
         return false;
     }

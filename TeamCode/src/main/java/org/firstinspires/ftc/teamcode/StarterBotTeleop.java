@@ -44,10 +44,11 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-@TeleOp(name = "StarterBotTeleop Modified", group = "StarterBot")
+@TeleOp(name = "StarterBotTeleop", group = "StarterBot")
 //@Disabled
 public class StarterBotTeleop extends OpMode {
     final double FEED_TIME_SECONDS = 0.35; //The feeder servos run this long when a shot is requested.
+    final double REVERSE_FEED_SECONDS = 0.20;
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
 
@@ -73,6 +74,7 @@ public class StarterBotTeleop extends OpMode {
         SPIN_UP,
         LAUNCH,
         LAUNCHING,
+        REVERSE_FEED
     }
 
     private LaunchState launchState;
@@ -250,6 +252,14 @@ public class StarterBotTeleop extends OpMode {
                 break;
             case LAUNCHING:
                 if (feederTimer.seconds() > FEED_TIME_SECONDS) {
+                    launchState = LaunchState.REVERSE_FEED;
+                    feederTimer.reset();
+                }
+                break;
+            case REVERSE_FEED:
+                leftFeeder.setPower(-FULL_SPEED);
+                rightFeeder.setPower(-FULL_SPEED);
+                if (feederTimer.seconds() > REVERSE_FEED_SECONDS) {
                     launchState = LaunchState.IDLE;
                     leftFeeder.setPower(STOP_SPEED);
                     rightFeeder.setPower(STOP_SPEED);
