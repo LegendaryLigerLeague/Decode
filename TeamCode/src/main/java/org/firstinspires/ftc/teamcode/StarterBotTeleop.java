@@ -174,7 +174,7 @@ public class StarterBotTeleop extends OpMode {
         /*
          * Here we call a function called arcadeDrive. The arcadeDrive function takes the input from
          * the joysticks, and applies power to the left and right drive motor to move the robot
-         * as requested by the driver. "arcade" refers to the control style we're using here.
+         * as requested by the driver. "arecade" refers to the control style we're using here.
          * Much like a classic arcade game, when you move the left joystick forward both motors
          * work to drive the robot forward, and when you move the right joystick left and right
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
@@ -182,13 +182,8 @@ public class StarterBotTeleop extends OpMode {
          */
         arcadeDrive(-gamepad1.left_stick_y, -gamepad1.right_stick_x, gamepad1.right_trigger <= 0);
 
-        /*
-         * Here we give the user control of the speed of the launcher motor without automatically
-         * queuing a shot.
-         */
-        if (gamepad1.y) {
-            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
-        } else if (gamepad1.b || launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
+        // Stop the launcher motor when we haven't launched in a while so it isn't turning while loading
+        if (launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
             launcherTimer.reset(); // so we don't keep stopping it while trying to start next launch`
             launcher.setVelocity(STOP_SPEED);
         }
@@ -211,6 +206,11 @@ public class StarterBotTeleop extends OpMode {
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         telemetry.addData("motorSpeed", launcher.getVelocity());
         telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
+
+        telemetry.addData("\nCONTROLS:",
+                "\nRight bumper: launch" +
+                        "\nHold right trigger: turbo"
+                );
 
     }
 
