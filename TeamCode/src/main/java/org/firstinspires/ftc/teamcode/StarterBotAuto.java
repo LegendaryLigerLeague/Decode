@@ -67,17 +67,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class StarterBotAuto extends OpMode
 {
 
-    final double FEED_TIME = 0.30; //Was originally 0.20 in provided code. Needed more time to ensure it launches.
-    final double REVERSE_FEED_SECONDS = 0.20;
-
+    final static double FEED_TIME = 0.30; //Was originally 0.20 in provided code. Needed more time to ensure it launches.
+    final static double REVERSE_FEED_SECONDS = StarterBotTeleop.REVERSE_FEED_SECONDS;
+    final static double LAUNCH_SPEED_MULTIPLIER = StarterBotTeleop.DEFAULT_LAUNCH_SPEED_MULTIPLIER;
     /*
      * When we control our launcher motor, we are using encoders. These allow the control system
      * to read the current speed of the motor and apply more or less power to keep it at a constant
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1125;
-    final double LAUNCHER_MIN_VELOCITY = 1075;
+    final static double LAUNCHER_TARGET_VELOCITY = 1125;
+    final static double LAUNCHER_MIN_VELOCITY = 1075;
 
     /*
      * The number of seconds that we wait between each of our 3 shots from the launcher. This
@@ -412,8 +412,8 @@ public class StarterBotAuto extends OpMode
                 }
                 break;
             case PREPARE:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY){
+                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * LAUNCH_SPEED_MULTIPLIER);
+                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY * LAUNCH_SPEED_MULTIPLIER){
                     launchState = LaunchState.LAUNCH;
                     leftFeeder.setPower(1);
                     rightFeeder.setPower(1);

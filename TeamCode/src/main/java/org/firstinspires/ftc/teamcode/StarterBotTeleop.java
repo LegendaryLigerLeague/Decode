@@ -47,14 +47,14 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name = "StarterBotTeleop", group = "StarterBot")
 //@Disabled
 public class StarterBotTeleop extends OpMode {
-    final double FEED_TIME_SECONDS = 0.35; //The feeder servos run this long when a shot is requested.
-    final double REVERSE_FEED_SECONDS = 0.20;
-    final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
-    final double FULL_SPEED = 1.0;
-    final double DEFAULT_LAUNCH_SPEED_MULTIPLIER = 0.95;
-    final double LAUNCHER_MOTOR_TIMEOUT = 3;
-    final double LAUNCHER_TARGET_VELOCITY = 1125;
-    final double LAUNCHER_MIN_VELOCITY = 1075;
+    final static double FEED_TIME_SECONDS = 0.35; //The feeder servos run this long when a shot is requested.
+    final static double REVERSE_FEED_SECONDS = 0.20;
+    final static double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
+    final static double FULL_SPEED = 1.0;
+    final static double DEFAULT_LAUNCH_SPEED_MULTIPLIER = 0.9;
+    final static double LAUNCHER_MOTOR_TIMEOUT = 3;
+    final static double LAUNCHER_TARGET_VELOCITY = 1125;
+    final static double LAUNCHER_MIN_VELOCITY = 1075;
 
     final double SLOWDOWN_MODE_MULTIPLIER = 0.50;
 
