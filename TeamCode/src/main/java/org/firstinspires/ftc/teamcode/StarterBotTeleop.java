@@ -51,7 +51,7 @@ public class StarterBotTeleop extends OpMode {
     final double REVERSE_FEED_SECONDS = 0.20;
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final double FULL_SPEED = 1.0;
-
+    final double DEFAULT_LAUNCH_SPEED_MULTIPLIER = 0.95;
     final double LAUNCHER_MOTOR_TIMEOUT = 3;
     final double LAUNCHER_TARGET_VELOCITY = 1125;
     final double LAUNCHER_MIN_VELOCITY = 1075;
@@ -83,7 +83,7 @@ public class StarterBotTeleop extends OpMode {
     double leftPower;
     double rightPower;
 
-    double launchSpeedMultiplier = 1.0;
+    double launchSpeedMultiplier = DEFAULT_LAUNCH_SPEED_MULTIPLIER;
 
     /*
      * Code to run ONCE when the driver hits INIT
