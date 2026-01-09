@@ -51,7 +51,7 @@ public class StarterBotTeleop extends OpMode {
     final static double REVERSE_FEED_SECONDS = 0.20;
     final static double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
     final static double FULL_SPEED = 1.0;
-    final static double DEFAULT_LAUNCH_SPEED_MULTIPLIER = 0.9;
+    final static double DEFAULT_LAUNCH_SPEED_MULTIPLIER = .93;
     final static double LAUNCHER_MOTOR_TIMEOUT = 3;
     final static double LAUNCHER_TARGET_VELOCITY = 1125;
     final static double LAUNCHER_MIN_VELOCITY = 1075;
@@ -189,9 +189,9 @@ public class StarterBotTeleop extends OpMode {
         }
 
         if (gamepad1.dpadUpWasPressed() && gamepad1.left_bumper) {
-            launchSpeedMultiplier += 0.05;
+            launchSpeedMultiplier += 0.01;
         } else if (gamepad1.dpadDownWasPressed() && gamepad1.left_bumper) {
-            launchSpeedMultiplier -= 0.05;
+            launchSpeedMultiplier -= 0.01;
         }
 
         /*
