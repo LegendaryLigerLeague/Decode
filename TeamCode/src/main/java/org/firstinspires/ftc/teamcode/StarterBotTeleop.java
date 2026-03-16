@@ -41,6 +41,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
@@ -64,6 +65,7 @@ public class StarterBotTeleop extends OpMode {
     private DcMotorEx launcher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
+    private Servo rackControl = null;
 
     ElapsedTime feederTimer = new ElapsedTime();
     ElapsedTime launcherTimer = new ElapsedTime();
@@ -84,6 +86,8 @@ public class StarterBotTeleop extends OpMode {
     double rightPower;
 
     double launchSpeedMultiplier = DEFAULT_LAUNCH_SPEED_MULTIPLIER;
+    double targetRackPosition = 0.0;
+    double rackHomePosition = 0.5;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -102,6 +106,7 @@ public class StarterBotTeleop extends OpMode {
         launcher = hardwareMap.get(DcMotorEx.class, "launcher");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+        rackControl = hardwareMap.get(Servo.class, "rack_control");
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -174,7 +179,7 @@ public class StarterBotTeleop extends OpMode {
         /*
          * Here we call a function called arcadeDrive. The arcadeDrive function takes the input from
          * the joysticks, and applies power to the left and right drive motor to move the robot
-         * as requested by the driver. "arecade" refers to the control style we're using here.
+         * as requested by the driver. "arcade" refers to the control style we're using here.
          * Much like a classic arcade game, when you move the left joystick forward both motors
          * work to drive the robot forward, and when you move the right joystick left and right
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
@@ -199,6 +204,15 @@ public class StarterBotTeleop extends OpMode {
          */
         launch(gamepad1.rightBumperWasPressed());
 
+        double rackPositionIncrement = 10 / 180.0; //10 degrees
+        if (gamepad1.dpadLeftWasPressed()) {
+            targetRackPosition -= rackPositionIncrement;
+        } else if (gamepad1.dpadRightWasPressed()) {
+            targetRackPosition += rackPositionIncrement;
+        }
+
+        rackControl.setPosition(rackHomePosition+targetRackPosition);
+
         /*
          * Show the state and motor powers
          */
@@ -206,6 +220,7 @@ public class StarterBotTeleop extends OpMode {
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         telemetry.addData("motorSpeed", launcher.getVelocity());
         telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
+        telemetry.addData("Rack Position", targetRackPosition);
 
         telemetry.addData("\nCONTROLS:",
                 "\nRight bumper: launch" +
