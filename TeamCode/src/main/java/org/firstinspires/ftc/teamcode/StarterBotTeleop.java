@@ -42,6 +42,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
@@ -65,7 +66,8 @@ public class StarterBotTeleop extends OpMode {
     private DcMotorEx launcher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
-    private Servo rackControl = null;
+    private Servo rackControlServo = null;
+    private TouchSensor rackTouchSensor;
 
     ElapsedTime feederTimer = new ElapsedTime();
     ElapsedTime launcherTimer = new ElapsedTime();
@@ -79,7 +81,14 @@ public class StarterBotTeleop extends OpMode {
         REVERSE_FEED
     }
 
+    enum RackServoState {
+        IDLE,
+        FINDING_BUTTON,
+        GOING_TO_TARGET;
+    }
+
     private LaunchState launchState;
+    private RackServoState rackServoState;
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftPower;
@@ -95,7 +104,7 @@ public class StarterBotTeleop extends OpMode {
     @Override
     public void init() {
         launchState = LaunchState.IDLE;
-
+        rackServoState = RackServoState.IDLE;
         /*
          * Initialize the hardware variables. Note that the strings used here as parameters
          * to 'get' must correspond to the names assigned during the robot configuration
@@ -106,7 +115,8 @@ public class StarterBotTeleop extends OpMode {
         launcher = hardwareMap.get(DcMotorEx.class, "launcher");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
-        rackControl = hardwareMap.get(Servo.class, "rack_control");
+        rackControlServo = hardwareMap.get(Servo.class, "rack_control");
+        rackTouchSensor = hardwareMap.get(TouchSensor.class, "rack_button");
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -209,9 +219,9 @@ public class StarterBotTeleop extends OpMode {
             targetRackPosition -= rackPositionIncrement;
         } else if (gamepad1.dpadRightWasPressed()) {
             targetRackPosition += rackPositionIncrement;
+        } else {
+            updateRackServo(gamepad1.xWasPressed());
         }
-
-        rackControl.setPosition(rackHomePosition+targetRackPosition);
 
         /*
          * Show the state and motor powers
@@ -220,12 +230,18 @@ public class StarterBotTeleop extends OpMode {
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         telemetry.addData("motorSpeed", launcher.getVelocity());
         telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
-        telemetry.addData("Rack Position", targetRackPosition);
+        telemetry.addData("Rack target Position", targetRackPosition);
+        telemetry.addData("Rack home position", rackHomePosition);
+        telemetry.addData("Rack servo actual position", rackControlServo.getPosition());
+        telemetry.addData("Rack servo state", rackServoState);
 
-        telemetry.addData("\nCONTROLS:",
+        telemetry.addData("\n\nCONTROLS:",
                 "\nRight bumper: launch" +
-                        "\nHold right trigger: turbo"
-                );
+                        "\nHold right trigger: turbo" +
+                        "\nD-pad left and right: manual rack position adjust" +
+                        "\nHold LB + D-pad up or down: launch speed multiplier adjust" +
+                        "\nX: request rehome of rack"
+        );
 
     }
 
@@ -281,5 +297,37 @@ public class StarterBotTeleop extends OpMode {
                 }
                 break;
         }
+    }
+
+    private boolean updateRackServo(boolean rehomeRequested) {
+        switch (rackServoState) {
+            case IDLE:
+                if (rehomeRequested) {
+                    rackServoState = RackServoState.FINDING_BUTTON;
+                } else if (rackControlServo.getPosition() != rackHomePosition + targetRackPosition) {
+                    rackServoState = RackServoState.GOING_TO_TARGET;
+                }
+                break;
+            case FINDING_BUTTON:
+                rackControlServo.setPosition(0.0);
+                if (rackTouchSensor.isPressed()) {
+                    rackHomePosition = rackControlServo.getPosition();
+                    rackServoState = RackServoState.GOING_TO_TARGET;
+                }
+                break;
+            case GOING_TO_TARGET:
+                if (rehomeRequested) {
+                    rackServoState = RackServoState.IDLE;
+                    break;
+                }
+                double targetServoPos = rackHomePosition + targetRackPosition;
+                rackControlServo.setPosition(targetServoPos);
+                if (rackControlServo.getPosition() == targetServoPos) {
+                    rackServoState = RackServoState.IDLE;
+                    return true;
+                }
+                break;
+        }
+        return false;
     }
 }
