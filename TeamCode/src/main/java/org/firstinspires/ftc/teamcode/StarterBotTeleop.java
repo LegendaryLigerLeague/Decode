@@ -40,6 +40,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -89,12 +90,16 @@ public class StarterBotTeleop extends OpMode {
     double targetRackPosition = 0.0;
     double rackHomePosition = 0.5;
 
+    private AprilTagCam aprilTagCam;
+
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
         launchState = LaunchState.IDLE;
+
+        aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
 
         /*
          * Initialize the hardware variables. Note that the strings used here as parameters
@@ -148,7 +153,9 @@ public class StarterBotTeleop extends OpMode {
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
          * both work to feed the ball into the robot.
          */
-        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        // 3/21/26: After replacing the servo, we found that the wires must be flipped so it doesn't
+        // need to be reversed anymore.
+//        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
         /*
          * Tell the driver that initialization is complete.
