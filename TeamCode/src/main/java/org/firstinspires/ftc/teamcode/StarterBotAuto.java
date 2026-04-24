@@ -162,14 +162,6 @@ public class StarterBotAuto extends OpMode
     private AutonomousState autonomousState;
 
     /*
-     * Here we create an enum not to create a state machine, but to capture which alliance we are on.
-     */
-    private enum Alliance {
-        RED,
-        BLUE;
-    }
-
-    /*
      * When we create the instance of our enum we can also assign a default state.
      */
     private Alliance alliance = Alliance.RED;

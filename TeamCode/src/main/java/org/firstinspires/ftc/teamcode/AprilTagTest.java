@@ -1,14 +1,15 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
-@TeleOp(name = "StarterBotTeleop", group = "StarterBot")
-public class AprilTagTestTeleop extends OpMode {
+@Autonomous
+public class AprilTagTest extends OpMode {
 
     AprilTagCam aprilTagCam;
+    Alliance sideToCheck = Alliance.RED;;
 
     @Override
     public void init() {
@@ -16,15 +17,20 @@ public class AprilTagTestTeleop extends OpMode {
     }
 
     @Override
+    public void init_loop() {
+        if (gamepad1.b) {
+            sideToCheck = Alliance.RED;
+        } else if (gamepad1.x) {
+            sideToCheck = Alliance.BLUE;
+        }
+
+        telemetry.addData("Alliance tag to find", sideToCheck);
+    }
+
+    @Override
     public void loop() {
         aprilTagCam.update();
 
-        TeamSide sideToCheck = null;
-        if (gamepad1.b) {
-            sideToCheck = TeamSide.RED;
-        } else if (gamepad1.x) {
-            sideToCheck = TeamSide.BLUE;
-        }
         if (sideToCheck != null) {
             AprilTagDetection detection = aprilTagCam.getDetectedTagOrNull(sideToCheck.aprilTagId);
             if (detection == null) {

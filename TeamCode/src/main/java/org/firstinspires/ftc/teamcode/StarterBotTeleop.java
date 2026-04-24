@@ -46,7 +46,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-@TeleOp(name = "StarterBotTeleop", group = "StarterBot")
+@TeleOp(name = "Starter Bot", group = "StarterBot")
 //@Disabled
 public class StarterBotTeleop extends OpMode {
     final static double FEED_TIME_SECONDS = 0.35; //The feeder servos run this long when a shot is requested.
