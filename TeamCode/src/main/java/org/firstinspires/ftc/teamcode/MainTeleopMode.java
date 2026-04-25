@@ -39,47 +39,26 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-@TeleOp(name = "StarterBotTeleop", group = "StarterBot")
+@TeleOp(name = "Main teleop mode", group = "StarterBot")
 //@Disabled
-public class StarterBotTeleop extends OpMode {
-    final static double FEED_TIME_SECONDS = 0.35; //The feeder servos run this long when a shot is requested.
-    final static double REVERSE_FEED_SECONDS = 0.20;
-    final static double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
-    final static double FULL_SPEED = 1.0;
+public class MainTeleopMode extends OpMode {
+
     final static double DEFAULT_LAUNCH_SPEED_MULTIPLIER = .93;
-    final static double LAUNCHER_MOTOR_TIMEOUT = 3;
-    final static double LAUNCHER_TARGET_VELOCITY = 1125;
-    final static double LAUNCHER_MIN_VELOCITY = 1075;
 
     final double SLOWDOWN_MODE_MULTIPLIER = 0.50;
 
     // Declare OpMode members.
     private DcMotor leftDrive = null;
     private DcMotor rightDrive = null;
-    private DcMotorEx launcher = null;
-    private CRServo leftFeeder = null;
-    private CRServo rightFeeder = null;
+
     private Servo rackControlServo = null;
     private TouchSensor rackTouchSensor;
-
-    ElapsedTime feederTimer = new ElapsedTime();
-    ElapsedTime launcherTimer = new ElapsedTime();
-
-
-    private enum LaunchState {
-        IDLE,
-        SPIN_UP,
-        LAUNCH,
-        LAUNCHING,
-        REVERSE_FEED
-    }
 
     enum RackServoState {
         IDLE,
@@ -87,8 +66,8 @@ public class StarterBotTeleop extends OpMode {
         GOING_TO_TARGET;
     }
 
-    private LaunchState launchState;
     private RackServoState rackServoState;
+    private Servo rackControl = null;
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftPower;
@@ -98,25 +77,26 @@ public class StarterBotTeleop extends OpMode {
     double targetRackPosition = 0.0;
     double rackHomePosition = 0.5;
 
+    private AprilTagCam aprilTagCam;
+
+    private LaunchSystem launchSystem;
+
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
-        launchState = LaunchState.IDLE;
+
         rackServoState = RackServoState.IDLE;
-        /*
-         * Initialize the hardware variables. Note that the strings used here as parameters
-         * to 'get' must correspond to the names assigned during the robot configuration
-         * step.
-         */
+        launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
+        aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
+        
         leftDrive = hardwareMap.get(DcMotor.class, "left_drive");
         rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
-        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
-        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
-        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+
         rackControlServo = hardwareMap.get(Servo.class, "rack_control");
         rackTouchSensor = hardwareMap.get(TouchSensor.class, "rack_button");
+        rackControl = hardwareMap.get(Servo.class, "rack_control");
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -129,36 +109,12 @@ public class StarterBotTeleop extends OpMode {
         rightDrive.setDirection(DcMotor.Direction.REVERSE);
 
         /*
-         * Here we set our launcher to the RUN_USING_ENCODER runmode.
-         * If you notice that you have no control over the velocity of the motor, it just jumps
-         * right to a number much higher than your set point, make sure that your encoders are plugged
-         * into the port right beside the motor itself. And that the motors polarity is consistent
-         * through any wiring.
-         */
-        launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        /*
          * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
          * slow down much faster when it is coasting. This creates a much more controllable
          * drivetrain. As the robot stops much quicker.
          */
         leftDrive.setZeroPowerBehavior(BRAKE);
         rightDrive.setZeroPowerBehavior(BRAKE);
-        launcher.setZeroPowerBehavior(BRAKE);
-
-        /*
-         * set Feeders to an initial value to initialize the servo controller
-         */
-        leftFeeder.setPower(STOP_SPEED);
-        rightFeeder.setPower(STOP_SPEED);
-
-        launcher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
-
-        /*
-         * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
-         * both work to feed the ball into the robot.
-         */
-        rightFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
         /*
          * Tell the driver that initialization is complete.
@@ -197,22 +153,13 @@ public class StarterBotTeleop extends OpMode {
          */
         arcadeDrive(-gamepad1.left_stick_y, -gamepad1.right_stick_x, gamepad1.right_trigger <= 0);
 
-        // Stop the launcher motor when we haven't launched in a while so it isn't turning while loading
-        if (launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
-            launcherTimer.reset(); // so we don't keep stopping it while trying to start next launch`
-            launcher.setVelocity(STOP_SPEED);
-        }
-
         if (gamepad1.dpadUpWasPressed() && gamepad1.left_bumper) {
             launchSpeedMultiplier += 0.01;
         } else if (gamepad1.dpadDownWasPressed() && gamepad1.left_bumper) {
             launchSpeedMultiplier -= 0.01;
         }
 
-        /*
-         * Now we call our "Launch" function.
-         */
-        launch(gamepad1.rightBumperWasPressed());
+        launchSystem.update(gamepad1.rightBumperWasPressed(), launchSpeedMultiplier);
 
         double rackPositionIncrement = 10 / 180.0; //10 degrees
         if (gamepad1.dpadLeftWasPressed()) {
@@ -226,9 +173,9 @@ public class StarterBotTeleop extends OpMode {
         /*
          * Show the state and motor powers
          */
-        telemetry.addData("State", launchState);
+        telemetry.addData("Launch state", launchSystem.getState());
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
-        telemetry.addData("motorSpeed", launcher.getVelocity());
+        telemetry.addData("motorSpeed", launchSystem.getLaunchMotorVelocity());
         telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
         telemetry.addData("Rack target Position", targetRackPosition);
         telemetry.addData("Rack home position", rackHomePosition);
@@ -259,44 +206,6 @@ public class StarterBotTeleop extends OpMode {
 
         leftDrive.setPower(leftPower);
         rightDrive.setPower(rightPower);
-    }
-
-    void launch(boolean shotRequested) {
-        switch (launchState) {
-            case IDLE:
-                if (shotRequested) {
-                    launchState = LaunchState.SPIN_UP;
-                }
-                break;
-            case SPIN_UP:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY * launchSpeedMultiplier) {
-                    launchState = LaunchState.LAUNCH;
-                }
-                break;
-            case LAUNCH:
-                leftFeeder.setPower(FULL_SPEED);
-                rightFeeder.setPower(FULL_SPEED);
-                feederTimer.reset();
-                launcherTimer.reset();
-                launchState = LaunchState.LAUNCHING;
-                break;
-            case LAUNCHING:
-                if (feederTimer.seconds() > FEED_TIME_SECONDS) {
-                    launchState = LaunchState.REVERSE_FEED;
-                    feederTimer.reset();
-                }
-                break;
-            case REVERSE_FEED:
-                leftFeeder.setPower(-FULL_SPEED);
-                rightFeeder.setPower(-FULL_SPEED);
-                if (feederTimer.seconds() > REVERSE_FEED_SECONDS) {
-                    launchState = LaunchState.IDLE;
-                    leftFeeder.setPower(STOP_SPEED);
-                    rightFeeder.setPower(STOP_SPEED);
-                }
-                break;
-        }
     }
 
     private boolean updateRackServo(boolean rehomeRequested) {
