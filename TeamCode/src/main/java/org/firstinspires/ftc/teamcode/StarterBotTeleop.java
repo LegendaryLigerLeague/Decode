@@ -304,12 +304,12 @@ public class StarterBotTeleop extends OpMode {
             case IDLE:
                 if (rehomeRequested) {
                     rackServoState = RackServoState.FINDING_BUTTON;
-                } else if (rackControlServo.getPosition() != rackHomePosition + targetRackPosition) {
+                } else if (rackControlServo.getPosition() != rackHomePosition - targetRackPosition) {
                     rackServoState = RackServoState.GOING_TO_TARGET;
                 }
                 break;
             case FINDING_BUTTON:
-                rackControlServo.setPosition(0.0);
+                rackControlServo.setPosition(1.0);
                 if (rackTouchSensor.isPressed()) {
                     rackHomePosition = rackControlServo.getPosition();
                     rackServoState = RackServoState.GOING_TO_TARGET;
@@ -320,7 +320,7 @@ public class StarterBotTeleop extends OpMode {
                     rackServoState = RackServoState.IDLE;
                     break;
                 }
-                double targetServoPos = rackHomePosition + targetRackPosition;
+                double targetServoPos = rackHomePosition - targetRackPosition;
                 rackControlServo.setPosition(targetServoPos);
                 if (rackControlServo.getPosition() == targetServoPos) {
                     rackServoState = RackServoState.IDLE;
