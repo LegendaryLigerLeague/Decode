@@ -67,7 +67,6 @@ public class MainTeleopMode extends OpMode {
     }
 
     private RackServoState rackServoState;
-    private Servo rackControl = null;
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftPower;
@@ -90,13 +89,12 @@ public class MainTeleopMode extends OpMode {
         rackServoState = RackServoState.IDLE;
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
-        
+
         leftDrive = hardwareMap.get(DcMotor.class, "left_drive");
         rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
 
         rackControlServo = hardwareMap.get(Servo.class, "rack_control");
         rackTouchSensor = hardwareMap.get(TouchSensor.class, "rack_button");
-        rackControl = hardwareMap.get(Servo.class, "rack_control");
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
