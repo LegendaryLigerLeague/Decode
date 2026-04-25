@@ -53,9 +53,6 @@ public class MainTeleopMode extends OpMode {
 
     final double SLOWDOWN_MODE_MULTIPLIER = 0.50;
 
-    // Declare OpMode members.
-    private DcMotor leftDrive = null;
-    private DcMotor rightDrive = null;
 
     private Servo rackControlServo = null;
     private TouchSensor rackTouchSensor;
@@ -68,10 +65,6 @@ public class MainTeleopMode extends OpMode {
 
     private RackServoState rackServoState;
 
-    // Setup a variable for each drive wheel to save power level for telemetry
-    double leftPower;
-    double rightPower;
-
     double launchSpeedMultiplier = DEFAULT_LAUNCH_SPEED_MULTIPLIER;
     double targetRackPosition = 0.0;
     double rackHomePosition = 0.5;
@@ -79,6 +72,7 @@ public class MainTeleopMode extends OpMode {
     private AprilTagCam aprilTagCam;
 
     private LaunchSystem launchSystem;
+    private DriveSystem driveSystem;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -90,34 +84,16 @@ public class MainTeleopMode extends OpMode {
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
 
-        leftDrive = hardwareMap.get(DcMotor.class, "left_drive");
-        rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
+        driveSystem = new DriveSystem(hardwareMap, "left_drive", "right_drive");
 
         rackControlServo = hardwareMap.get(Servo.class, "rack_control");
         rackTouchSensor = hardwareMap.get(TouchSensor.class, "rack_button");
 
         /*
-         * To drive forward, most robots need the motor on one side to be reversed,
-         * because the axles point in opposite directions. Pushing the left stick forward
-         * MUST make robot go forward. So adjust these two lines based on your first test drive.
-         * Note: The settings here assume direct drive on left and right wheels. Gear
-         * Reduction or 90 Deg drives may require direction flips
-         */
-        leftDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightDrive.setDirection(DcMotor.Direction.REVERSE);
-
-        /*
-         * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
-         * slow down much faster when it is coasting. This creates a much more controllable
-         * drivetrain. As the robot stops much quicker.
-         */
-        leftDrive.setZeroPowerBehavior(BRAKE);
-        rightDrive.setZeroPowerBehavior(BRAKE);
-
-        /*
          * Tell the driver that initialization is complete.
          */
         telemetry.addData("Status", "Initialized");
+
     }
 
     /*
@@ -140,16 +116,9 @@ public class MainTeleopMode extends OpMode {
      */
     @Override
     public void loop() {
-        /*
-         * Here we call a function called arcadeDrive. The arcadeDrive function takes the input from
-         * the joysticks, and applies power to the left and right drive motor to move the robot
-         * as requested by the driver. "arcade" refers to the control style we're using here.
-         * Much like a classic arcade game, when you move the left joystick forward both motors
-         * work to drive the robot forward, and when you move the right joystick left and right
-         * both motors work to rotate the robot. Combinations of these inputs can be used to create
-         * more complex maneuvers.
-         */
-        arcadeDrive(-gamepad1.left_stick_y, -gamepad1.right_stick_x, gamepad1.right_trigger <= 0);
+
+        boolean slowDownMode = gamepad1.right_trigger <= 0;
+        driveSystem.driveContinuously(-gamepad1.left_stick_y, -gamepad1.right_stick_x, slowDownMode ? SLOWDOWN_MODE_MULTIPLIER : 1.0);
 
         if (gamepad1.dpadUpWasPressed() && gamepad1.left_bumper) {
             launchSpeedMultiplier += 0.01;
@@ -172,7 +141,7 @@ public class MainTeleopMode extends OpMode {
          * Show the state and motor powers
          */
         telemetry.addData("Launch state", launchSystem.getState());
-        telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
+        telemetry.addData("Motors", "left (%.2f), right (%.2f)", driveSystem.getLeftMotorPower(), driveSystem.getRightMotorPower());
         telemetry.addData("motorSpeed", launchSystem.getLaunchMotorVelocity());
         telemetry.addData("Launch speed multiplier", launchSpeedMultiplier);
         telemetry.addData("Rack target Position", targetRackPosition);
@@ -192,18 +161,6 @@ public class MainTeleopMode extends OpMode {
 
     @Override
     public void stop() {
-    }
-
-    void arcadeDrive(double forward, double rotate, boolean isSlowdownMode) {
-        leftPower = forward + rotate;
-        rightPower = forward - rotate;
-        if (isSlowdownMode) {
-            leftPower = leftPower * SLOWDOWN_MODE_MULTIPLIER;
-            rightPower = rightPower * SLOWDOWN_MODE_MULTIPLIER;
-        }
-
-        leftDrive.setPower(leftPower);
-        rightDrive.setPower(rightPower);
     }
 
     private boolean updateRackServo(boolean rehomeRequested) {

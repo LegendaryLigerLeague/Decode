@@ -18,7 +18,6 @@ public class LaunchSystem {
     private final static double STOP_SPEED = 0.0;
     private final static double FULL_SPEED = 1.0;
 
-    private final static double DEFAULT_LAUNCH_SPEED_MULTIPLIER = .93;
     private final static double LAUNCHER_MOTOR_TIMEOUT = 3;
     private final static double LAUNCHER_TARGET_VELOCITY = 1125;
     private final static double LAUNCHER_MIN_VELOCITY = 1075;
@@ -37,11 +36,12 @@ public class LaunchSystem {
         LAUNCHING,
         REVERSE_FEED
     }
+
     private LaunchState launchState = LaunchState.IDLE;
 
     private double launchInterval = 0.0;
 
-    public LaunchSystem (HardwareMap hardwareMap, String launcherName, String leftFeederName, String rightFeederName) {
+    public LaunchSystem(HardwareMap hardwareMap, String launcherName, String leftFeederName, String rightFeederName) {
         launcher = hardwareMap.get(DcMotorEx.class, launcherName);
         leftFeeder = hardwareMap.get(CRServo.class, leftFeederName);
         rightFeeder = hardwareMap.get(CRServo.class, rightFeederName);
