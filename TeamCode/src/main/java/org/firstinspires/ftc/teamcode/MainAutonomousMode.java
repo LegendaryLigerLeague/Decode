@@ -32,38 +32,34 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
-
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @Autonomous(name = "Main autonomous mode", group = "StarterBot")
-//@Disabled
 public class MainAutonomousMode extends OpMode {
 
-    final static double LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_LAUNCH_SPEED_MULTIPLIER;
+    final static double CLOSE_LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER;
+    final static double FAR_LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER;
+    final static double CLOSE_RACK_POSITION = MainTeleopMode.DEFAULT_CLOSE_RACK_POSITION;
+    final static double FAR_RACK_POSITION = MainTeleopMode.DEFAULT_FAR_RACK_POSITION;
 
-    final double TIME_BETWEEN_SHOTS = 2;
+    private final double TIME_BETWEEN_SHOTS = 2;
 
-    final double DRIVE_SPEED = 0.5;
-    final double ROTATE_SPEED = 0.2;
+    private final double DRIVE_SPEED = 0.5;
+    private final double ROTATE_SPEED = 0.2;
     private ShootingPosition startingPosition = ShootingPosition.AGAINST_GOAL;
 
-    int shotsToFire = 3; //The number of shots to fire in this auto.
+    private int shotsToFire = 3; //The number of shots to fire in this auto.
 
-    double robotRotationAngle = 45;
+    private double robotRotationAngle = 45;
+    private double launchSpeedMultiplier;
 
     private LaunchSystem launchSystem;
     private DriveSystem driveSystem;
+    private RackSystem rackSystem;
 
     private enum AutonomousState {
         LAUNCH,
@@ -87,6 +83,8 @@ public class MainAutonomousMode extends OpMode {
 
         driveSystem = new DriveSystem(hardwareMap, "left_drive", "right_drive");
 
+        rackSystem = new RackSystem(hardwareMap,"rack_control", "rack_button");
+
         telemetry.addData("Status", "Initialized");
     }
 
@@ -105,8 +103,12 @@ public class MainAutonomousMode extends OpMode {
 
         if (gamepad1.a) {
             startingPosition = ShootingPosition.ACROSS_FIELD;
+            launchSpeedMultiplier = FAR_LAUNCH_SPEED_MULTIPLIER;
+            rackSystem.setTargetPosition(FAR_RACK_POSITION);
         } else if (gamepad1.y) {
             startingPosition = ShootingPosition.AGAINST_GOAL;
+            launchSpeedMultiplier = CLOSE_LAUNCH_SPEED_MULTIPLIER;
+            rackSystem.setTargetPosition(CLOSE_RACK_POSITION);
         }
 
         telemetry.addData("\nPress Y", "for next to goal");
@@ -127,14 +129,17 @@ public class MainAutonomousMode extends OpMode {
 
     @Override
     public void loop() {
+        if (!rackSystem.update()){
+            return; // wait until rack in position
+        }
         switch (autonomousState) {
             case LAUNCH:
-                launchSystem.update(true, LAUNCH_SPEED_MULTIPLIER);
+                launchSystem.update(true, launchSpeedMultiplier);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
                 break;
 
             case WAIT_FOR_LAUNCH:
-                launchSystem.update(false, LAUNCH_SPEED_MULTIPLIER);
+                launchSystem.update(false, launchSpeedMultiplier);
                 if (launchSystem.isReady()) {
                     shotsToFire -= 1;
                     if (shotsToFire > 0) {

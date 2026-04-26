@@ -73,6 +73,9 @@ public class DriveSystem {
         rightDrive.setPower((forward - rotation) * speedMultiplier);
     }
 
+    /**
+     * Must be called when about to use driveIncrementally or rotateIncrementally with a new target.
+     */
     public void stopForNewIncrementalTarget() {
         leftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
