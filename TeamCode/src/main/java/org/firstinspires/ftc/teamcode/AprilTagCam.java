@@ -55,6 +55,7 @@ public class AprilTagCam {
         }
     }
 
+    /** Must call this in the loop. */
     public void update() {
         detections = aprilTagProcessor.getDetections();
     }
@@ -76,13 +77,13 @@ public class AprilTagCam {
 
     /**
      *
-     * @return Bearing in degrees from center of camera. Positive number is left(TODO CHECK THIS)
+     * @return Bearing in degrees from center of camera. Positive number is right.
      * of center. 0.0 if the tag isn't detected.
      */
     public double getBearingToTag(AprilTagId id) {
-        if (id == null) return 0f;
+        if (id == null) return 0.0;
         AprilTagDetection detection = getDetectedTagOrNull(id);
-        if (detection == null) return 0f;
+        if (detection == null) return 0.0;
         return detection.ftcPose.bearing;
     }
 
@@ -91,9 +92,9 @@ public class AprilTagCam {
      * @return Distance from tag in inches. 0.0 if the tag isn't detected.
      */
     public double getDistanceToTag(AprilTagId id) {
-        if (id == null) return 0f;
+        if (id == null) return 0.0;
         AprilTagDetection detection = getDetectedTagOrNull(id);
-        if (detection == null) return 0f;
+        if (detection == null) return 0.0;
         return detection.ftcPose.range;
     }
 }

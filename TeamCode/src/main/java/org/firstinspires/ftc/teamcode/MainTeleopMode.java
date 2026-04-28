@@ -49,8 +49,10 @@ public class MainTeleopMode extends OpMode {
 
     private LaunchSystem launchSystem;
     private DriveSystem driveSystem;
-    private Alliance alliance = Alliance.RED;
     private RackSystem rackSystem;
+    private AimingSystem aimingSystem;
+
+    private Alliance alliance = Alliance.RED;
 
     private double closeTargetRackPosition = DEFAULT_CLOSE_RACK_POSITION;
     private double farTargetRackPosition = DEFAULT_FAR_RACK_POSITION;
@@ -65,6 +67,7 @@ public class MainTeleopMode extends OpMode {
 
         driveSystem = new DriveSystem(hardwareMap, "left_drive", "right_drive");
         rackSystem = new RackSystem(hardwareMap,"rack_control", "rack_button");
+        aimingSystem = new AimingSystem();
 
         telemetry.addData("Status", "Initialized");
     }
@@ -89,12 +92,11 @@ public class MainTeleopMode extends OpMode {
 
     @Override
     public void loop() {
+        aprilTagCam.update();
 
-        if (gamepad1.left_bumper) {
-            if (gamepad1.leftBumperWasPressed()) {
-                driveSystem.stopForNewIncrementalTarget();
-            }
-            aimForAprilTag();
+        if (gamepad1.left_trigger > 0) {
+            aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem);
+            aimingSystem.logStatus(telemetry);
         } else {
             boolean slowDownMode = gamepad1.right_trigger <= 0;
             driveSystem.driveContinuously(-gamepad1.left_stick_y, -gamepad1.right_stick_x, slowDownMode ? SLOWDOWN_MODE_MULTIPLIER : 1.0);
@@ -199,10 +201,6 @@ public class MainTeleopMode extends OpMode {
     public void stop() {
     }
 
-    private void aimForAprilTag() {
-
-
-    }
 
 
 }
