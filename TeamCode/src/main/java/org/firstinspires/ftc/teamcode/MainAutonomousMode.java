@@ -180,11 +180,9 @@ public class MainAutonomousMode extends OpMode {
         }
 
         telemetry.addData("AutoState", autonomousState);
-        telemetry.addData("LauncherState", launchSystem.getState());
-        telemetry.addData("Motor Current Positions", "left (%d), right (%d)",
-                driveSystem.getLeftMotorPosition(), driveSystem.getRightMotorPosition());
-        telemetry.addData("Motor Target Positions", "left (%d), right (%d)",
-                driveSystem.getLeftMotorTargetPosition(), driveSystem.getRightMotorTargetPosition());
+        rackSystem.logStatus(telemetry);
+        launchSystem.logStatus(telemetry);
+        driveSystem.logStatus(telemetry);
         telemetry.update();
     }
 

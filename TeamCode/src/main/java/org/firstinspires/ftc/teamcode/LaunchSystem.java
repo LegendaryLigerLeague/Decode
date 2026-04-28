@@ -9,6 +9,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 public class LaunchSystem {
     //The feeder servos run this long when a shot is requested.
     private final static double FEED_TIME_SECONDS = 0.35;
@@ -26,15 +28,15 @@ public class LaunchSystem {
     private final CRServo leftFeeder;
     private final CRServo rightFeeder;
 
-    private final ElapsedTime feederTimer = new ElapsedTime();
-    private final ElapsedTime launcherTimer = new ElapsedTime();
+
+    private final ElapsedTime launcherTimer = new ElapsedTime(); // Always is time since last launch initiated
 
     public enum LaunchState {
         IDLE,
         SPIN_UP,
-        LAUNCH,
         LAUNCHING,
-        REVERSE_FEED
+        REVERSE_FEED,
+        WAITING_FOR_INTERVAL
     }
 
     private LaunchState launchState = LaunchState.IDLE;
@@ -54,45 +56,42 @@ public class LaunchSystem {
     }
 
     public void update(boolean requestLaunch, double launchSpeedMultiplier) {
-        // Stop the launcher motor when we haven't launched in a while so it isn't turning while loading
-        if (launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
-            launcherTimer.reset(); // so we don't keep stopping it while trying to start next launch`
-            launcher.setVelocity(STOP_SPEED);
-        }
-
         switch (launchState) {
             case IDLE:
                 if (requestLaunch) {
                     launchState = LaunchState.SPIN_UP;
+                } else if (launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
+                    // Stop the launcher after some idle time so it isn't turning while loading.
+                    launcher.setVelocity(STOP_SPEED);
                 }
                 break;
             case SPIN_UP:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY * launchSpeedMultiplier) {
-                    launchState = LaunchState.LAUNCH;
+                double targetLaunchVelocity = LAUNCHER_TARGET_VELOCITY * launchSpeedMultiplier;
+                launcher.setVelocity(targetLaunchVelocity);
+                if (launcher.getVelocity() >= targetLaunchVelocity) {
+                    // initiate launch
+                    leftFeeder.setPower(FULL_SPEED);
+                    rightFeeder.setPower(FULL_SPEED);
+                    launcherTimer.reset();
+                    launchState = LaunchState.LAUNCHING;
                 }
                 break;
-            case LAUNCH:
-                leftFeeder.setPower(FULL_SPEED);
-                rightFeeder.setPower(FULL_SPEED);
-                feederTimer.reset();
-                launcherTimer.reset();
-                launchState = LaunchState.LAUNCHING;
-                break;
             case LAUNCHING:
-                if (feederTimer.seconds() > FEED_TIME_SECONDS) {
+                if (launcherTimer.seconds() >= FEED_TIME_SECONDS) {
                     launchState = LaunchState.REVERSE_FEED;
-                    feederTimer.reset();
                 }
                 break;
             case REVERSE_FEED:
                 leftFeeder.setPower(-FULL_SPEED);
                 rightFeeder.setPower(-FULL_SPEED);
-                if (feederTimer.seconds() > REVERSE_FEED_SECONDS) {
+                if (launcherTimer.seconds() >= FEED_TIME_SECONDS + REVERSE_FEED_SECONDS) {
                     leftFeeder.setPower(STOP_SPEED);
                     rightFeeder.setPower(STOP_SPEED);
+                    launchState = LaunchState.WAITING_FOR_INTERVAL;
                 }
-                if (feederTimer.seconds() > Math.max(REVERSE_FEED_SECONDS, launchInterval)) {
+                break;
+            case WAITING_FOR_INTERVAL:
+                if (launcherTimer.seconds() >= launchInterval) {
                     launchState = LaunchState.IDLE;
                 }
                 break;
@@ -117,11 +116,8 @@ public class LaunchSystem {
         return launchState == LaunchState.IDLE;
     }
 
-    public LaunchState getState() {
-        return launchState;
-    }
-
-    public double getLaunchMotorVelocity() {
-        return launcher.getVelocity();
+    public void logStatus(Telemetry telemetry) {
+        telemetry.addData("Launch state", launchState);
+        telemetry.addData("Launch motor speed", launcher.getVelocity());
     }
 }

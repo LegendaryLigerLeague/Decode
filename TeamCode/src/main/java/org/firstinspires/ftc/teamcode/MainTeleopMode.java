@@ -34,9 +34,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
-
 
 @TeleOp(name = "Main teleop mode", group = "StarterBot")
 public class MainTeleopMode extends OpMode {
@@ -63,20 +60,13 @@ public class MainTeleopMode extends OpMode {
 
     @Override
     public void init() {
-
-
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
 
         driveSystem = new DriveSystem(hardwareMap, "left_drive", "right_drive");
         rackSystem = new RackSystem(hardwareMap,"rack_control", "rack_button");
 
-
-        /*
-         * Tell the driver that initialization is complete.
-         */
         telemetry.addData("Status", "Initialized");
-
     }
 
     @Override
@@ -170,13 +160,9 @@ public class MainTeleopMode extends OpMode {
             }
         }
 
-        /*
-         * Show the state and motor powers
-         */
         telemetry.addData("Shooting position", shootingPosition);
-        telemetry.addData("\nLaunch state", launchSystem.getState());
-        telemetry.addData("Motors", "left (%.2f), right (%.2f)", driveSystem.getLeftMotorPower(), driveSystem.getRightMotorPower());
-        telemetry.addData("motorSpeed", launchSystem.getLaunchMotorVelocity());
+        launchSystem.logStatus(telemetry);
+        driveSystem.logStatus(telemetry);
         switch (shootingPosition) {
             case ACROSS_FIELD:
                 telemetry.addData("Launch speed multiplier", farLaunchSpeedMultiplier);
@@ -187,10 +173,7 @@ public class MainTeleopMode extends OpMode {
                 telemetry.addData("Rack target position", closeTargetRackPosition);
                 break;
         }
-        telemetry.addData("Rack home position", rackSystem.getHomePosition());
-        telemetry.addData("Rack servo actual position", rackSystem.getServoPosition());
-        telemetry.addData("Rack servo set target position", rackSystem.getTargetPosition());
-        telemetry.addData("Rack servo state", rackSystem.getState());
+        rackSystem.logStatus(telemetry);
         telemetry.addData("Rack at target", isRackAtTarget);
 
         boolean aprilTagDetected = aprilTagCam.isTagDetected(alliance.aprilTagId);
@@ -202,7 +185,7 @@ public class MainTeleopMode extends OpMode {
 
         telemetry.addData("\n\nCONTROLS:",
                 "\nRight bumper: launch" +
-                        "\nHold right trigger: turbo" +
+                        "\nHold right trigger: turbo drive" +
                         "\nHold LB + D-pad left and right: manual rack position adjust" +
                         "\nHold LB + D-pad up or down: launch speed multiplier adjust" +
                         "\nX: request rehome of rack" +

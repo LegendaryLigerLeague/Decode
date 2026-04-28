@@ -4,6 +4,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 public class RackSystem {
     public enum State {
         REHOMING,
@@ -27,18 +29,6 @@ public class RackSystem {
 
     public void setTargetPosition(double targetPosition) {
         this.targetPosition = targetPosition;
-    }
-
-    public State getState() {
-        return state;
-    }
-
-    public double getHomePosition() {
-        return homePosition;
-    }
-
-    public double getServoPosition() {
-        return servo.getPosition();
     }
 
     public void rehome(){
@@ -69,4 +59,7 @@ public class RackSystem {
         return false;
     }
 
+    public void logStatus(Telemetry telemetry) {
+        telemetry.addData("Rack servo state", state);
+    }
 }

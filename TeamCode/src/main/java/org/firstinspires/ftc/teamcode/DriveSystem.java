@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
@@ -34,30 +35,6 @@ public class DriveSystem {
         leftDrive.setZeroPowerBehavior(BRAKE);
         rightDrive.setZeroPowerBehavior(BRAKE);
 
-    }
-
-    public double getLeftMotorPower() {
-        return leftDrive.getPower();
-    }
-
-    public double getRightMotorPower() {
-        return rightDrive.getPower();
-    }
-
-    public int getLeftMotorPosition() {
-        return leftDrive.getCurrentPosition();
-    }
-
-    public int getRightMotorPosition() {
-        return rightDrive.getCurrentPosition();
-    }
-
-    public int getLeftMotorTargetPosition() {
-        return leftDrive.getTargetPosition();
-    }
-
-    public int getRightMotorTargetPosition() {
-        return rightDrive.getTargetPosition();
     }
 
     /**
@@ -91,15 +68,7 @@ public class DriveSystem {
      */
     public boolean driveIncrementally(double speed, double distance, DistanceUnit distanceUnit, double holdSeconds) {
         final double TOLERANCE_MM = 10;
-        /*
-         * In this function we use a DistanceUnits. This is a class that the FTC SDK implements
-         * which allows us to accept different input units depending on the user's preference.
-         * To use these, put both a double and a DistanceUnit as parameters in a function and then
-         * call distanceUnit.toMm(distance). This will return the number of mm that are equivalent
-         * to whatever distance in the unit specified. We are working in mm for this, so that's the
-         * unit we request from distanceUnit. But if we want to use inches in our function, we could
-         * use distanceUnit.toInches() instead!
-         */
+
         double targetPosition = (distanceUnit.toMm(distance) * TICKS_PER_MM);
 
         leftDrive.setTargetPosition((int) targetPosition);
@@ -111,18 +80,11 @@ public class DriveSystem {
         leftDrive.setPower(speed);
         rightDrive.setPower(speed);
 
-        /*
-         * Here we check if we are within tolerance of our target position or not. We calculate the
-         * absolute error (distance from our setpoint regardless of if it is positive or negative)
-         * and compare that to our tolerance. If we have not reached our target yet, then we reset
-         * the driveTimer. Only after we reach the target can the timer count higher than our
-         * holdSeconds variable.
-         */
         if (Math.abs(targetPosition - leftDrive.getCurrentPosition()) > (TOLERANCE_MM * TICKS_PER_MM)) {
             driveTimer.reset();
         }
 
-        return (driveTimer.seconds() > holdSeconds);
+        return driveTimer.seconds() > holdSeconds;
     }
 
     /**
@@ -168,5 +130,20 @@ public class DriveSystem {
         }
 
         return (driveTimer.seconds() > holdSeconds);
+    }
+
+    public void logStatus(Telemetry telemetry) {
+        if (leftDrive.getMode() == DcMotor.RunMode.RUN_WITHOUT_ENCODER) {
+            // continuous driving
+            telemetry.addData("Drive motors", "left (%.2f), right (%.2f)",
+                    leftDrive.getPower(), rightDrive.getPower());
+        } else {
+            // incremental driving
+            telemetry.addData("Motor current positions", "left (%d), right (%d)",
+                    leftDrive.getCurrentPosition(), rightDrive.getCurrentPosition());
+            telemetry.addData("Motor target positions", "left (%d), right (%d)",
+                    leftDrive.getTargetPosition(), rightDrive.getTargetPosition());
+        }
+
     }
 }
