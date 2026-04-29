@@ -34,6 +34,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -46,22 +47,31 @@ public class MainAutonomousMode extends OpMode {
     final static double CLOSE_RACK_POSITION = MainTeleopMode.DEFAULT_CLOSE_RACK_POSITION;
     final static double FAR_RACK_POSITION = MainTeleopMode.DEFAULT_FAR_RACK_POSITION;
 
-    private final double TIME_BETWEEN_SHOTS = 2;
+    private static final double TIME_BETWEEN_SHOTS = 2.0;
 
-    private final double DRIVE_SPEED = 0.5;
-    private final double ROTATE_SPEED = 0.2;
+    private static final double DRIVE_SPEED = 0.5;
+    private static final double ROTATE_SPEED = 0.2;
+    private static final double MAX_AIMING_TIME = 7.5;
+
     private ShootingPosition startingPosition = ShootingPosition.AGAINST_GOAL;
+
 
     private int shotsToFire = 3; //The number of shots to fire in this auto.
 
     private double robotRotationAngle = 45;
     private double launchSpeedMultiplier;
 
+    private AimingSystem aimingSystem;
     private LaunchSystem launchSystem;
     private DriveSystem driveSystem;
+    private AprilTagCam aprilTagCam;
     private RackSystem rackSystem;
 
+    private final ElapsedTime aimingTimeoutTimer = new ElapsedTime();
+
     private enum AutonomousState {
+        AIMING,
+        WAIT_FOR_RACK,
         LAUNCH,
         WAIT_FOR_LAUNCH,
         DRIVING_AWAY_FROM_GOAL,
@@ -76,8 +86,6 @@ public class MainAutonomousMode extends OpMode {
 
     @Override
     public void init() {
-        autonomousState = AutonomousState.LAUNCH;
-
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         launchSystem.setLaunchInterval(TIME_BETWEEN_SHOTS);
 
@@ -85,12 +93,14 @@ public class MainAutonomousMode extends OpMode {
 
         rackSystem = new RackSystem(hardwareMap,"rack_control", "rack_button");
 
+        aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
+        aimingSystem = new AimingSystem();
+
         telemetry.addData("Status", "Initialized");
     }
 
     @Override
     public void init_loop() {
-
         if (gamepad1.b) {
             alliance = Alliance.RED;
         } else if (gamepad1.x) {
@@ -103,12 +113,8 @@ public class MainAutonomousMode extends OpMode {
 
         if (gamepad1.a) {
             startingPosition = ShootingPosition.ACROSS_FIELD;
-            launchSpeedMultiplier = FAR_LAUNCH_SPEED_MULTIPLIER;
-            rackSystem.setTargetPosition(FAR_RACK_POSITION);
         } else if (gamepad1.y) {
             startingPosition = ShootingPosition.AGAINST_GOAL;
-            launchSpeedMultiplier = CLOSE_LAUNCH_SPEED_MULTIPLIER;
-            rackSystem.setTargetPosition(CLOSE_RACK_POSITION);
         }
 
         telemetry.addData("\nPress Y", "for next to goal");
@@ -118,21 +124,36 @@ public class MainAutonomousMode extends OpMode {
 
     @Override
     public void start() {
-        // Skip the shooting part if we are across field
-        // TODO When far launching works, this can be removed. There will be a new autonomous state
-        // that adjusts rack first.
-        // TODO we will still need it to skip the drive away from goal state though!
         if (startingPosition == ShootingPosition.ACROSS_FIELD) {
-            autonomousState = AutonomousState.DRIVING_OFF_LINE;
+            rackSystem.setTargetPosition(FAR_RACK_POSITION);
+            launchSpeedMultiplier = FAR_LAUNCH_SPEED_MULTIPLIER;
+            autonomousState = AutonomousState.AIMING;
+            aimingTimeoutTimer.reset();
+        } else {
+            launchSpeedMultiplier = CLOSE_LAUNCH_SPEED_MULTIPLIER;
+            autonomousState = AutonomousState.WAIT_FOR_RACK;
+            rackSystem.setTargetPosition(CLOSE_RACK_POSITION);
         }
     }
 
     @Override
     public void loop() {
-        if (!rackSystem.update()){
-            return; // wait until rack in position
-        }
+        boolean rackReady = rackSystem.update(); // update regardless of state to begin moving while robot is aiming
         switch (autonomousState) {
+            case AIMING:
+                aprilTagCam.update();
+                if (aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem) ||
+                        aimingTimeoutTimer.seconds() >= MAX_AIMING_TIME) {
+                    autonomousState = AutonomousState.WAIT_FOR_RACK;
+                }
+                break;
+
+            case WAIT_FOR_RACK:
+                if (rackReady) {
+                    autonomousState = AutonomousState.LAUNCH;
+                }
+                break;
+
             case LAUNCH:
                 launchSystem.update(true, launchSpeedMultiplier);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
@@ -147,7 +168,11 @@ public class MainAutonomousMode extends OpMode {
                     } else {
                         driveSystem.stopForNewIncrementalTarget();
                         launchSystem.stopMotorIfIdle(); // Can stop it early
-                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+                        if (startingPosition == ShootingPosition.AGAINST_GOAL) {
+                            autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+                        } else {
+                            autonomousState = AutonomousState.DRIVING_OFF_LINE;
+                        }
                     }
                 }
                 break;
@@ -173,7 +198,9 @@ public class MainAutonomousMode extends OpMode {
                 break;
 
             case DRIVING_OFF_LINE:
-                if (driveSystem.driveIncrementally(DRIVE_SPEED, -30, DistanceUnit.INCH, 1)) {
+                // TODO experimentally find right distance for driving off line after we have aimed at goal
+                double distance = startingPosition == ShootingPosition.AGAINST_GOAL ? -30 : 15;
+                if (driveSystem.driveIncrementally(DRIVE_SPEED, distance, DistanceUnit.INCH, 1)) {
                     autonomousState = AutonomousState.COMPLETE;
                 }
                 break;
@@ -183,6 +210,7 @@ public class MainAutonomousMode extends OpMode {
         rackSystem.logStatus(telemetry);
         launchSystem.logStatus(telemetry);
         driveSystem.logStatus(telemetry);
+        aimingSystem.logStatus(telemetry);
         telemetry.update();
     }
 
