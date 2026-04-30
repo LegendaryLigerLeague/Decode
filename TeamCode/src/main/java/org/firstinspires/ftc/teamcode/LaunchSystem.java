@@ -55,12 +55,20 @@ public class LaunchSystem {
 
     }
 
-    public void update(boolean requestLaunch, double launchSpeedMultiplier) {
+    /**
+     * Initiates a launch cycle if ready (previous launch complete, including launch interval time).
+     * Always succeeds if isReady() returns true.
+     */
+    public void requestLaunch() {
+        if (isReady()) {
+            launchState = LaunchState.SPIN_UP;
+        }
+    }
+
+    public void update(double launchSpeedMultiplier) {
         switch (launchState) {
             case IDLE:
-                if (requestLaunch) {
-                    launchState = LaunchState.SPIN_UP;
-                } else if (launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
+                if (launcherTimer.seconds() >= LAUNCHER_MOTOR_TIMEOUT) {
                     // Stop the launcher after some idle time so it isn't turning while loading.
                     launcher.setVelocity(STOP_SPEED);
                 }
@@ -112,6 +120,10 @@ public class LaunchSystem {
         }
     }
 
+    /**
+     * @return true If ready for a new launch. i.e. If a previous shot has been made, the launch interval
+     * time has passed, and the launch cycle is complete.
+     */
     public boolean isReady() {
         return launchState == LaunchState.IDLE;
     }

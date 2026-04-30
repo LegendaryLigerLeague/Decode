@@ -59,7 +59,6 @@ public class MainAutonomousMode extends OpMode {
     private int shotsToFire = 3; //The number of shots to fire in this auto.
 
     private double robotRotationAngle = 45;
-    private double launchSpeedMultiplier;
 
     private AimingSystem aimingSystem;
     private LaunchSystem launchSystem;
@@ -72,8 +71,7 @@ public class MainAutonomousMode extends OpMode {
     private enum AutonomousState {
         AIMING,
         WAIT_FOR_RACK,
-        LAUNCH,
-        WAIT_FOR_LAUNCH,
+        LAUNCHING,
         DRIVING_AWAY_FROM_GOAL,
         ROTATING,
         DRIVING_OFF_LINE,
@@ -126,11 +124,9 @@ public class MainAutonomousMode extends OpMode {
     public void start() {
         if (startingPosition == ShootingPosition.ACROSS_FIELD) {
             rackSystem.setTargetPosition(FAR_RACK_POSITION);
-            launchSpeedMultiplier = FAR_LAUNCH_SPEED_MULTIPLIER;
             autonomousState = AutonomousState.AIMING;
             aimingTimeoutTimer.reset();
         } else {
-            launchSpeedMultiplier = CLOSE_LAUNCH_SPEED_MULTIPLIER;
             autonomousState = AutonomousState.WAIT_FOR_RACK;
             rackSystem.setTargetPosition(CLOSE_RACK_POSITION);
         }
@@ -150,21 +146,18 @@ public class MainAutonomousMode extends OpMode {
 
             case WAIT_FOR_RACK:
                 if (rackReady) {
-                    autonomousState = AutonomousState.LAUNCH;
+                    autonomousState = AutonomousState.LAUNCHING;
                 }
                 break;
 
-            case LAUNCH:
-                launchSystem.update(true, launchSpeedMultiplier);
-                autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
-                break;
-
-            case WAIT_FOR_LAUNCH:
-                launchSystem.update(false, launchSpeedMultiplier);
-                if (launchSystem.isReady()) {
-                    shotsToFire -= 1;
+            case LAUNCHING:
+                double launchSpeedMultiplier = startingPosition == ShootingPosition.AGAINST_GOAL ?
+                        CLOSE_LAUNCH_SPEED_MULTIPLIER : FAR_LAUNCH_SPEED_MULTIPLIER;
+                launchSystem.update(launchSpeedMultiplier);
+                if (launchSystem.isReady()) {;
                     if (shotsToFire > 0) {
-                        autonomousState = AutonomousState.LAUNCH;
+                        shotsToFire--;
+                        launchSystem.requestLaunch();
                     } else {
                         driveSystem.stopForNewIncrementalTarget();
                         launchSystem.stopMotorIfIdle(); // Can stop it early

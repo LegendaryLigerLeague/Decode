@@ -138,8 +138,10 @@ public class MainTeleopMode extends OpMode {
 
         double launchSpeedMultiplier =
                 shootingPosition == ShootingPosition.AGAINST_GOAL ? closeLaunchSpeedMultiplier : farLaunchSpeedMultiplier;
-        boolean shouldRequestLaunch = isRackAtTarget && gamepad1.rightBumperWasPressed();
-        launchSystem.update(shouldRequestLaunch, launchSpeedMultiplier);
+        if (isRackAtTarget && gamepad1.right_bumper) {
+            launchSystem.requestLaunch();
+        }
+        launchSystem.update(launchSpeedMultiplier);
 
         double rackPositionIncrement = 10 / 180.0; //10 degrees
         if (gamepad1.dpadLeftWasPressed() && gamepad1.left_bumper) {
