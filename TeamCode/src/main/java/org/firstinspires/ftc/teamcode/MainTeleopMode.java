@@ -41,9 +41,12 @@ public class MainTeleopMode extends OpMode {
     final static double DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER = .93;
     final static double DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER = 1.82;
 
-    final static double DEFAULT_CLOSE_RACK_POSITION = 0.95;
-    final static double DEFAULT_FAR_RACK_POSITION = 0.4;
+    final static double DEFAULT_CLOSE_RACK_POSITION = 0.8389;
+    final static double DEFAULT_FAR_RACK_POSITION = 0.3444;
     final double SLOWDOWN_MODE_MULTIPLIER = 0.50;
+
+    private static final double MIN_LAUNCH_INTERVAL = 0.5;
+    private static final double RACK_MOVE_TIME = 0.5;
 
     private AprilTagCam aprilTagCam;
 
@@ -63,6 +66,8 @@ public class MainTeleopMode extends OpMode {
     @Override
     public void init() {
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
+        launchSystem.setLaunchInterval(MIN_LAUNCH_INTERVAL);
+
         aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
 
         driveSystem = new DriveSystem(hardwareMap, "left_drive", "right_drive");
@@ -83,11 +88,6 @@ public class MainTeleopMode extends OpMode {
         telemetry.addData("Press X", "for BLUE");
         telemetry.addData("Press B", "for RED");
         telemetry.addData("Selected Alliance", alliance);
-    }
-
-    @Override
-    public void start() {
-
     }
 
     @Override
@@ -114,7 +114,7 @@ public class MainTeleopMode extends OpMode {
                     farLaunchSpeedMultiplier += 0.01;
                     break;
                 case AGAINST_GOAL:
-                    closeLaunchSpeedMultiplier += 0.1;
+                    closeLaunchSpeedMultiplier += 0.01;
                     break;
             }
         } else if (gamepad1.dpadDownWasPressed() && gamepad1.left_bumper) {
@@ -123,7 +123,7 @@ public class MainTeleopMode extends OpMode {
                     farLaunchSpeedMultiplier -= 0.01;
                     break;
                 case AGAINST_GOAL:
-                    closeLaunchSpeedMultiplier -= 0.1;
+                    closeLaunchSpeedMultiplier -= 0.01;
                     break;
             }
         }
@@ -134,7 +134,7 @@ public class MainTeleopMode extends OpMode {
         if (gamepad1.xWasPressed()) {
             rackSystem.rehome();
         }
-        boolean isRackAtTarget = rackSystem.update();
+        boolean isRackAtTarget = rackSystem.update(RACK_MOVE_TIME);
 
         double launchSpeedMultiplier =
                 shootingPosition == ShootingPosition.AGAINST_GOAL ? closeLaunchSpeedMultiplier : farLaunchSpeedMultiplier;
@@ -164,45 +164,37 @@ public class MainTeleopMode extends OpMode {
             }
         }
 
-        telemetry.addData("Shooting position", shootingPosition);
-        launchSystem.logStatus(telemetry);
-        driveSystem.logStatus(telemetry);
+        telemetry.addData("Shooting position", shootingPosition.toString() + "\n");
+
         switch (shootingPosition) {
             case ACROSS_FIELD:
                 telemetry.addData("Launch speed multiplier", farLaunchSpeedMultiplier);
                 telemetry.addData("Rack target position", farTargetRackPosition);
                 break;
             case AGAINST_GOAL:
-                telemetry.addData("Launch speed multiplier", farLaunchSpeedMultiplier);
+                telemetry.addData("Launch speed multiplier", closeLaunchSpeedMultiplier);
                 telemetry.addData("Rack target position", closeTargetRackPosition);
                 break;
         }
-        rackSystem.logStatus(telemetry);
-        telemetry.addData("Rack at target", isRackAtTarget);
+
+        telemetry.addData("\nRack at target", isRackAtTarget);
 
         boolean aprilTagDetected = aprilTagCam.isTagDetected(alliance.aprilTagId);
-        telemetry.addData("\n\n" + alliance + " tag", aprilTagDetected ? "Detected" : "Not detected");
+        telemetry.addData("\n" + alliance + " tag", aprilTagDetected ? "Detected" : "Not detected");
         if (aprilTagDetected) {
-            telemetry.addData("Tag bearing", aprilTagCam.getBearingToTag(alliance.aprilTagId));
-            telemetry.addData("Tag distance", aprilTagCam.getDistanceToTag(alliance.aprilTagId));
+            aimingSystem.logStatus(telemetry);
         }
 
-        telemetry.addData("\n\nCONTROLS:",
-                "\nRight bumper: launch" +
-                        "\nHold right trigger: turbo drive" +
-                        "\nHold LB + D-pad left and right: manual rack position adjust" +
-                        "\nHold LB + D-pad up or down: launch speed multiplier adjust" +
-                        "\nX: request rehome of rack" +
-                        "\nHold left trigger: aim for alliance's AprilTag" +
-                        "\nY and A: set shooting position close or far from goal"
+        telemetry.addData("\nCONTROLS",
+                "\n\tRight bumper: launch" +
+                        "\n\tHold RT: turbo drive" +
+                        "\n\tHold LB + D-pad left/right: rack position adjust" +
+                        "\n\tHold LB + D-pad up/down: launch speed adjust" +
+                        "\n\tX: rehome the rack" +
+                        "\n\tHold LT: aim for alliance's AprilTag" +
+                        "\n\tY and A: set shooting position close or far from goal"
         );
 
     }
-
-    @Override
-    public void stop() {
-    }
-
-
 
 }

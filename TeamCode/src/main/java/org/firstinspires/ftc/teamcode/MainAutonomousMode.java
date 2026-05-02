@@ -47,11 +47,13 @@ public class MainAutonomousMode extends OpMode {
     final static double CLOSE_RACK_POSITION = MainTeleopMode.DEFAULT_CLOSE_RACK_POSITION;
     final static double FAR_RACK_POSITION = MainTeleopMode.DEFAULT_FAR_RACK_POSITION;
 
+
     private static final double TIME_BETWEEN_SHOTS = 2.0;
 
     private static final double DRIVE_SPEED = 0.5;
     private static final double ROTATE_SPEED = 0.2;
     private static final double MAX_AIMING_TIME = 7.5;
+    private static final double RACK_MOVE_TIME = 0.5;
 
     private ShootingPosition startingPosition = ShootingPosition.AGAINST_GOAL;
 
@@ -134,7 +136,7 @@ public class MainAutonomousMode extends OpMode {
 
     @Override
     public void loop() {
-        boolean rackReady = rackSystem.update(); // update regardless of state to begin moving while robot is aiming
+        boolean rackReady = rackSystem.update(RACK_MOVE_TIME); // update regardless of state to begin moving while robot is aiming
         switch (autonomousState) {
             case AIMING:
                 aprilTagCam.update();
