@@ -57,14 +57,23 @@ public class MainTeleopMode extends OpMode {
 
     private Alliance alliance = Alliance.RED;
 
-    private double closeTargetRackPosition = DEFAULT_CLOSE_RACK_POSITION;
-    private double farTargetRackPosition = DEFAULT_FAR_RACK_POSITION;
-    double closeLaunchSpeedMultiplier = DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER;
-    double farLaunchSpeedMultiplier = DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER;
+    private SaveData saveData;
+
+    private double closeTargetRackPosition;
+    private double farTargetRackPosition;
+    double closeLaunchSpeedMultiplier;
+    double farLaunchSpeedMultiplier;
     private ShootingPosition shootingPosition = ShootingPosition.ACROSS_FIELD;
 
     @Override
     public void init() {
+        saveData = new SaveData(telemetry);
+        closeTargetRackPosition = saveData.getDouble(SaveKey.CLOSE_RACK_POSITION, DEFAULT_CLOSE_RACK_POSITION);
+        farTargetRackPosition = saveData.getDouble(SaveKey.FAR_RACK_POSITION, DEFAULT_FAR_RACK_POSITION);
+        closeLaunchSpeedMultiplier = saveData.getDouble(SaveKey.CLOSE_LAUNCH_MULTIPLIER, DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER);
+        farLaunchSpeedMultiplier = saveData.getDouble(SaveKey.FAR_LAUNCH_MULTIPLIER, DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER);
+        alliance = saveData.getAlliance(SaveKey.ALLIANCE, Alliance.RED);
+
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         launchSystem.setLaunchInterval(MIN_LAUNCH_INTERVAL);
 
@@ -195,6 +204,16 @@ public class MainTeleopMode extends OpMode {
                         "\n\tY and A: set shooting position close or far from goal"
         );
 
+    }
+
+    @Override
+    public void stop() {
+        saveData.putDouble(SaveKey.FAR_RACK_POSITION, farTargetRackPosition);
+        saveData.putDouble(SaveKey.CLOSE_RACK_POSITION, closeTargetRackPosition);
+        saveData.putDouble(SaveKey.FAR_LAUNCH_MULTIPLIER, farLaunchSpeedMultiplier);
+        saveData.putDouble(SaveKey.CLOSE_LAUNCH_MULTIPLIER, closeLaunchSpeedMultiplier);
+        saveData.putAlliance(SaveKey.ALLIANCE, alliance);
+        saveData.save();
     }
 
 }
