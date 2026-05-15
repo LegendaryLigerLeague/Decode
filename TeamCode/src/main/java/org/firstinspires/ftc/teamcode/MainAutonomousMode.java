@@ -46,7 +46,7 @@ public class MainAutonomousMode extends OpMode {
     final static double FAR_LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER;
     final static double CLOSE_RACK_POSITION = MainTeleopMode.DEFAULT_CLOSE_RACK_POSITION;
     final static double FAR_RACK_POSITION = MainTeleopMode.DEFAULT_FAR_RACK_POSITION;
-
+    final static double APRIL_TAG_OFFSET = MainTeleopMode.DEFAULT_APRIL_TAG_OFFSET;
 
     private static final double TIME_BETWEEN_SHOTS = 2.0;
 
@@ -140,7 +140,7 @@ public class MainAutonomousMode extends OpMode {
         switch (autonomousState) {
             case AIMING:
                 aprilTagCam.update();
-                if (aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem) ||
+                if (aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem, APRIL_TAG_OFFSET * alliance.direction) ||
                         aimingTimeoutTimer.seconds() >= MAX_AIMING_TIME) {
                     autonomousState = AutonomousState.WAIT_FOR_RACK;
                 }

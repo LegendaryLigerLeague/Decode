@@ -50,7 +50,7 @@ public class RackSystem {
     public boolean update(double holdTime) {
         switch (state) {
             case REHOMING:
-                servo.setPosition(servo.getPosition() + 2/360.0); // Set to high value but move slowly to avoid slamming button.
+                servo.setPosition(servo.getPosition() + 1/360.0); // Set to high value but move slowly to avoid slamming button.
                 if (touchSensor.isPressed()) {
                     homePosition = servo.getPosition();
                     state = State.SEEKING_TARGET;
