@@ -89,7 +89,7 @@ public class MainAutonomousMode extends OpMode {
 
     @Override
     public void init() {
-        saveData = new SaveData(telemetry);
+        saveData = new SaveData(hardwareMap);
         alliance = saveData.getAlliance(SaveKey.ALLIANCE, Alliance.RED);
 
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
@@ -218,7 +218,6 @@ public class MainAutonomousMode extends OpMode {
     @Override
     public void stop() {
         saveData.putAlliance(SaveKey.ALLIANCE, alliance);
-        saveData.save();
     }
 
 }
