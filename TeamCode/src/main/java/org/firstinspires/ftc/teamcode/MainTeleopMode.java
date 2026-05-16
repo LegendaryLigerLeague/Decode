@@ -67,7 +67,7 @@ public class MainTeleopMode extends OpMode {
 
     @Override
     public void init() {
-        saveData = new SaveData(telemetry);
+        saveData = new SaveData(hardwareMap);
         closeTargetRackPosition = saveData.getDouble(SaveKey.CLOSE_RACK_POSITION, DEFAULT_CLOSE_RACK_POSITION);
         farTargetRackPosition = saveData.getDouble(SaveKey.FAR_RACK_POSITION, DEFAULT_FAR_RACK_POSITION);
         closeLaunchSpeedMultiplier = saveData.getDouble(SaveKey.CLOSE_LAUNCH_MULTIPLIER, DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER);
@@ -213,7 +213,6 @@ public class MainTeleopMode extends OpMode {
         saveData.putDouble(SaveKey.FAR_LAUNCH_MULTIPLIER, farLaunchSpeedMultiplier);
         saveData.putDouble(SaveKey.CLOSE_LAUNCH_MULTIPLIER, closeLaunchSpeedMultiplier);
         saveData.putAlliance(SaveKey.ALLIANCE, alliance);
-        saveData.save();
     }
 
 }
