@@ -16,13 +16,12 @@ public class LaunchSystem {
     private final static double FEED_TIME_SECONDS = 0.35;
 
     //After feeding a ball, the servos reverse to ensure there isn't a preloaded ball.
-    private final static double REVERSE_FEED_SECONDS = 0.20;
+    private final static double REVERSE_FEED_SECONDS = 0.2;
     private final static double STOP_SPEED = 0.0;
     private final static double FULL_SPEED = 1.0;
 
     private final static double LAUNCHER_MOTOR_TIMEOUT = 3;
     private final static double LAUNCHER_TARGET_VELOCITY = 1125;
-    private final static double LAUNCHER_MIN_VELOCITY = 1075;
 
     private final DcMotorEx launcher;
     private final CRServo leftFeeder;

@@ -39,13 +39,13 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 public class MainTeleopMode extends OpMode {
 
     final static double DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER = 0.93;
-    final static double DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER = 1.73;
+    final static double DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER = 1.68;
 
     final static double DEFAULT_CLOSE_RACK_POSITION = 0.8389;
-    final static double DEFAULT_FAR_RACK_POSITION = 0.1222;
+    final static double DEFAULT_FAR_RACK_POSITION = 0.0666;
     final static double SLOWDOWN_MODE_MULTIPLIER = 0.50;
 
-    final static double DEFAULT_APRIL_TAG_OFFSET = 10.0;
+    final static double DEFAULT_APRIL_TAG_OFFSET = 0;
 
     private static final double MIN_LAUNCH_INTERVAL = 0.5;
     private static final double RACK_MOVE_TIME = 0.5;
@@ -124,27 +124,14 @@ public class MainTeleopMode extends OpMode {
         }
         launchSystem.update(launchSpeedMultiplier);
 
-        telemetry.addData("Shooting position", shootingPosition.toString() + "\n");
-
-        switch (shootingPosition) {
-            case ACROSS_FIELD:
-                telemetry.addData("Launch speed multiplier", farLaunchSpeedMultiplier);
-                telemetry.addData("Rack target position", farTargetRackPosition);
-                break;
-            case AGAINST_GOAL:
-                telemetry.addData("Launch speed multiplier", closeLaunchSpeedMultiplier);
-                telemetry.addData("Rack target position", closeTargetRackPosition);
-                break;
-        }
-
-        telemetry.addData("\nApril Tag Offset", aprilTagOffset);
+        logSettings();
 
         boolean aprilTagDetected = aprilTagCam.isTagDetected(alliance.aprilTagId);
         telemetry.addData("\n" + alliance + " tag", aprilTagDetected ? "Detected" : "Not detected");
         aimingSystem.logStatus(telemetry);
 
         telemetry.addData("\nCONTROLS",
-                "\n\tRight bumper: launch" +
+                "\n\tRB: launch" +
                         "\n\tHold RT: turbo drive" +
                         "\n\tX: rehome the rack" +
                         "\n\tHold LT: aim for alliance's AprilTag" +
@@ -215,6 +202,22 @@ public class MainTeleopMode extends OpMode {
                 shootingPosition = ShootingPosition.ACROSS_FIELD;
             }
         }
+    }
+
+    private void logSettings() {
+        telemetry.addData("Shooting position", shootingPosition.toString() + "\n");
+        switch (shootingPosition) {
+            case ACROSS_FIELD:
+                telemetry.addData("Launch speed multiplier", farLaunchSpeedMultiplier);
+                telemetry.addData("Rack target position", farTargetRackPosition);
+                break;
+            case AGAINST_GOAL:
+                telemetry.addData("Launch speed multiplier", closeLaunchSpeedMultiplier);
+                telemetry.addData("Rack target position", closeTargetRackPosition);
+                break;
+        }
+
+        telemetry.addData("\nApril Tag Offset", aprilTagOffset);
     }
 
 }

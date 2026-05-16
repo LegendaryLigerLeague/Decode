@@ -46,7 +46,8 @@ public class MainAutonomousMode extends OpMode {
     final static double FAR_LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER;
     final static double CLOSE_RACK_POSITION = MainTeleopMode.DEFAULT_CLOSE_RACK_POSITION;
     final static double FAR_RACK_POSITION = MainTeleopMode.DEFAULT_FAR_RACK_POSITION;
-    final static double APRIL_TAG_OFFSET = MainTeleopMode.DEFAULT_APRIL_TAG_OFFSET;
+
+    final static double APRIL_TAG_OFFSET = -2.6;
 
     private static final double TIME_BETWEEN_SHOTS = 2.0;
 

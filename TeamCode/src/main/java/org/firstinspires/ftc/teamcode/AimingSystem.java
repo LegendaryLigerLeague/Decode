@@ -40,7 +40,7 @@ public class AimingSystem {
 
     public void logStatus(Telemetry telemetry) {
         telemetry.addData("Tag bearing (non-zero when tag detected)", bearingToTag);
-        telemetry.addData("Aiming bearing (tag bearing plus offset)", bearingToTarget);
+        telemetry.addData("Target bearing (tag bearing plus offset)", bearingToTarget);
         telemetry.addData("Aiming system is rotating", rotating);
     }
 }
