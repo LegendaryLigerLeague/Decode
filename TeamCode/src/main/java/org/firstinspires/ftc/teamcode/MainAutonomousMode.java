@@ -42,13 +42,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 @Autonomous(name = "Main autonomous mode", group = "StarterBot")
 public class MainAutonomousMode extends OpMode {
 
-    final static double CLOSE_LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER;
-    final static double FAR_LAUNCH_SPEED_MULTIPLIER = MainTeleopMode.DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER;
-    final static double CLOSE_RACK_POSITION = MainTeleopMode.DEFAULT_CLOSE_RACK_POSITION;
-    final static double FAR_RACK_POSITION = MainTeleopMode.DEFAULT_FAR_RACK_POSITION;
-
-    final static double APRIL_TAG_OFFSET = -2.6;
-
     private static final double TIME_BETWEEN_SHOTS = 2.0;
 
     private static final double DRIVE_SPEED = 0.5;
@@ -57,7 +50,6 @@ public class MainAutonomousMode extends OpMode {
     private static final double RACK_MOVE_TIME = 0.5;
 
     private ShootingPosition startingPosition = ShootingPosition.AGAINST_GOAL;
-
 
     private int shotsToFire = 3; //The number of shots to fire in this auto.
 
@@ -113,7 +105,7 @@ public class MainAutonomousMode extends OpMode {
         telemetry.addData("Selected Alliance", alliance);
 
         if (gamepad1.a) {
-            startingPosition = ShootingPosition.ACROSS_FIELD;
+            startingPosition = ShootingPosition.ACROSS_FIELD_AUTO;
         } else if (gamepad1.y) {
             startingPosition = ShootingPosition.AGAINST_GOAL;
         }
@@ -125,13 +117,12 @@ public class MainAutonomousMode extends OpMode {
 
     @Override
     public void start() {
-        if (startingPosition == ShootingPosition.ACROSS_FIELD) {
-            rackSystem.setTargetPosition(FAR_RACK_POSITION);
+        rackSystem.setTargetPosition(startingPosition.rackPosition);
+        if (startingPosition == ShootingPosition.ACROSS_FIELD_AUTO) {
             autonomousState = AutonomousState.AIMING;
             aimingTimeoutTimer.reset();
         } else {
             autonomousState = AutonomousState.WAIT_FOR_RACK;
-            rackSystem.setTargetPosition(CLOSE_RACK_POSITION);
         }
     }
 
@@ -141,7 +132,7 @@ public class MainAutonomousMode extends OpMode {
         switch (autonomousState) {
             case AIMING:
                 aprilTagCam.update();
-                if (aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem, APRIL_TAG_OFFSET * alliance.direction) ||
+                if (aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem, startingPosition.aimingOffset * alliance.direction) ||
                         aimingTimeoutTimer.seconds() >= MAX_AIMING_TIME) {
                     autonomousState = AutonomousState.WAIT_FOR_RACK;
                 }
@@ -154,10 +145,8 @@ public class MainAutonomousMode extends OpMode {
                 break;
 
             case LAUNCHING:
-                double launchSpeedMultiplier = startingPosition == ShootingPosition.AGAINST_GOAL ?
-                        CLOSE_LAUNCH_SPEED_MULTIPLIER : FAR_LAUNCH_SPEED_MULTIPLIER;
-                launchSystem.update(launchSpeedMultiplier);
-                if (launchSystem.isReady()) {;
+                launchSystem.update(startingPosition.launchMotorSpeed);
+                if (launchSystem.isReady()) {
                     if (shotsToFire > 0) {
                         shotsToFire--;
                         launchSystem.requestLaunch();
@@ -194,7 +183,6 @@ public class MainAutonomousMode extends OpMode {
                 break;
 
             case DRIVING_OFF_LINE:
-                // TODO experimentally find right distance for driving off line after we have aimed at goal
                 double distance = startingPosition == ShootingPosition.AGAINST_GOAL ? -30 : 15;
                 if (driveSystem.driveIncrementally(DRIVE_SPEED, distance, DistanceUnit.INCH, 1)) {
                     autonomousState = AutonomousState.COMPLETE;
@@ -208,10 +196,6 @@ public class MainAutonomousMode extends OpMode {
         driveSystem.logStatus(telemetry);
         aimingSystem.logStatus(telemetry);
         telemetry.update();
-    }
-
-    @Override
-    public void stop() {
     }
 
 }

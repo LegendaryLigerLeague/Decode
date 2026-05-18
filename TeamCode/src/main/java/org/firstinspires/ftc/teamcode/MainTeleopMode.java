@@ -35,18 +35,14 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 @TeleOp(name = "Main teleop mode", group = "StarterBot")
 public class MainTeleopMode extends OpMode {
 
-    final static double DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER = 0.93;
-    final static double DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER = 1.68;
-
-    final static double DEFAULT_CLOSE_RACK_POSITION = 0.8389;
-    final static double DEFAULT_FAR_RACK_POSITION = 0.0666;
-    final static double SLOWDOWN_MODE_MULTIPLIER = 0.50;
-
-    final static double DEFAULT_APRIL_TAG_OFFSET = 0;
-
+    private final static double SLOWDOWN_MODE_MULTIPLIER = 0.50;
     private static final double MIN_LAUNCH_INTERVAL = 0.5;
     private static final double RACK_MOVE_TIME = 0.5;
 
@@ -59,14 +55,8 @@ public class MainTeleopMode extends OpMode {
 
     private Alliance alliance = Alliance.RED;
 
-    private double closeTargetRackPosition = DEFAULT_CLOSE_RACK_POSITION;
-    private double farTargetRackPosition = DEFAULT_FAR_RACK_POSITION;
-    private double closeLaunchSpeedMultiplier = DEFAULT_CLOSE_LAUNCH_SPEED_MULTIPLIER;
-    private double farLaunchSpeedMultiplier = DEFAULT_FAR_LAUNCH_SPEED_MULTIPLIER;
     private ShootingPosition shootingPosition = ShootingPosition.ACROSS_FIELD;
-
-    private double aprilTagOffset = DEFAULT_APRIL_TAG_OFFSET;
-
+    private final Map<ShootingPosition, ShootParams> shootParamsMap = new HashMap<>();
 
     @Override
     public void init() {
@@ -78,6 +68,11 @@ public class MainTeleopMode extends OpMode {
         driveSystem = new DriveSystem(hardwareMap, "left_drive", "right_drive");
         rackSystem = new RackSystem(hardwareMap, "rack_control", "rack_button");
         aimingSystem = new AimingSystem();
+
+        for (ShootingPosition p : ShootingPosition.values()) {
+            ShootParams params = new ShootParams(p.launchMotorSpeed, p.rackPosition, p.aimingOffset);
+            shootParamsMap.put(p, params);
+        }
 
         telemetry.addData("Status", "Initialized");
     }
@@ -101,28 +96,26 @@ public class MainTeleopMode extends OpMode {
 
         adjustSettings();
 
+        ShootParams shootParams = Objects.requireNonNull(shootParamsMap.get(shootingPosition));
+
         if (gamepad1.left_trigger > 0) {
-            aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem, aprilTagOffset * alliance.direction);
+            aimingSystem.aimForAprilTag(alliance.aprilTagId, aprilTagCam, driveSystem, shootParams.aimingOffset * alliance.direction);
             aimingSystem.logStatus(telemetry);
         } else {
             boolean slowDownMode = gamepad1.right_trigger <= 0;
             driveSystem.driveContinuously(-gamepad1.left_stick_y, -gamepad1.right_stick_x, slowDownMode ? SLOWDOWN_MODE_MULTIPLIER : 1.0);
         }
 
-        rackSystem.setTargetPosition(
-                shootingPosition == ShootingPosition.AGAINST_GOAL ? closeTargetRackPosition : farTargetRackPosition
-        );
+        rackSystem.setTargetPosition(shootParams.rackPosition);
         if (gamepad1.xWasPressed()) {
             rackSystem.rehome();
         }
         boolean isRackAtTarget = rackSystem.update(RACK_MOVE_TIME);
 
-        double launchSpeedMultiplier =
-                shootingPosition == ShootingPosition.AGAINST_GOAL ? closeLaunchSpeedMultiplier : farLaunchSpeedMultiplier;
         if (isRackAtTarget && gamepad1.right_bumper) {
             launchSystem.requestLaunch();
         }
-        launchSystem.update(launchSpeedMultiplier);
+        launchSystem.update(shootParams.launchMotorSpeed);
 
         logSettings();
 
@@ -147,77 +140,46 @@ public class MainTeleopMode extends OpMode {
     }
 
     private void adjustSettings() {
+        ShootParams shootParams = Objects.requireNonNull(shootParamsMap.get(shootingPosition));
+
         if (gamepad1.left_bumper) {
             double rackPositionIncrement = 5 / 180.0; //5 degrees
             if (gamepad1.dpadLeftWasPressed()) {
-                switch (shootingPosition) {
-                    case ACROSS_FIELD:
-                        farTargetRackPosition -= rackPositionIncrement;
-                        break;
-                    case AGAINST_GOAL:
-                        closeTargetRackPosition -= rackPositionIncrement;
-                        break;
-                }
+                shootParams.rackPosition -= rackPositionIncrement;
             } else if (gamepad1.dpadRightWasPressed()) {
-                switch (shootingPosition) {
-                    case ACROSS_FIELD:
-                        farTargetRackPosition += rackPositionIncrement;
-                        break;
-                    case AGAINST_GOAL:
-                        closeTargetRackPosition += rackPositionIncrement;
-                        break;
-                }
+                shootParams.rackPosition += rackPositionIncrement;
             }
 
             if (gamepad1.dpadUpWasPressed()) {
-                switch (shootingPosition) {
-                    case ACROSS_FIELD:
-                        farLaunchSpeedMultiplier += 0.01;
-                        break;
-                    case AGAINST_GOAL:
-                        closeLaunchSpeedMultiplier += 0.01;
-                        break;
-                }
+                shootParams.launchMotorSpeed += 0.01;
             } else if (gamepad1.dpadDownWasPressed()) {
-                switch (shootingPosition) {
-                    case ACROSS_FIELD:
-                        farLaunchSpeedMultiplier -= 0.01;
-                        break;
-                    case AGAINST_GOAL:
-                        closeLaunchSpeedMultiplier -= 0.01;
-                        break;
-                }
+                shootParams.launchMotorSpeed -= 0.01;
             }
 
             if (gamepad1.yWasPressed()) {
-                aprilTagOffset += 0.5;
-
+                shootParams.aimingOffset += 0.5;
             } else if (gamepad1.aWasPressed()) {
-                aprilTagOffset -= 0.5;
+                shootParams.aimingOffset -= 0.5;
             }
         } else { // LB is not pressed
             if (gamepad1.yWasPressed()) {
                 shootingPosition = ShootingPosition.AGAINST_GOAL;
             } else if (gamepad1.aWasPressed()) {
                 shootingPosition = ShootingPosition.ACROSS_FIELD;
+            } else if (gamepad1.bWasPressed()) {
+                shootingPosition = ShootingPosition.CENTER;
             }
         }
     }
 
     private void logSettings() {
         telemetry.addData("Shooting position", shootingPosition.toString() + "\n");
-        switch (shootingPosition) {
-            case ACROSS_FIELD:
-                telemetry.addData("Launch speed multiplier", farLaunchSpeedMultiplier);
-                telemetry.addData("Rack target position", farTargetRackPosition);
-                break;
-            case AGAINST_GOAL:
-                telemetry.addData("Launch speed multiplier", closeLaunchSpeedMultiplier);
-                telemetry.addData("Rack target position", closeTargetRackPosition);
-                break;
-        }
 
-        telemetry.addData("\nApril Tag Offset", aprilTagOffset);
+        ShootParams shootParams = Objects.requireNonNull(shootParamsMap.get(shootingPosition));
+
+        telemetry.addData("Launch speed multiplier", shootParams.launchMotorSpeed);
+        telemetry.addData("Rack target position", shootParams.rackPosition);
+        telemetry.addData("\nApril Tag Offset", shootParams.aimingOffset);
     }
 
 }
