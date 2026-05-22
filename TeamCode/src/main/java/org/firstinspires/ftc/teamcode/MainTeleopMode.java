@@ -128,7 +128,7 @@ public class MainTeleopMode extends OpMode {
                         "\n\tHold RT: turbo drive" +
                         "\n\tX: rehome the rack" +
                         "\n\tHold LT: aim for alliance's AprilTag" +
-                        "\n\tY and A: set shooting position close or far from goal");
+                        "\n\tY, B, and A: set shooting position close, center, or far from goal");
 
 
         telemetry.addData("\nCHANGING SETTINGS - hold LB +",
