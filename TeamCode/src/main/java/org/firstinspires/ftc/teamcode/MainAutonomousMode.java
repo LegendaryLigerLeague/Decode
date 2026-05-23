@@ -36,6 +36,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
@@ -93,6 +94,7 @@ public class MainAutonomousMode extends OpMode {
         aprilTagCam = new AprilTagCam(hardwareMap, telemetry, "webcam");
         aimingSystem = new AimingSystem();
 
+        telemetry.setDisplayFormat(Telemetry.DisplayFormat.HTML);
         telemetry.addData("Status", "Initialized");
     }
 
@@ -104,9 +106,9 @@ public class MainAutonomousMode extends OpMode {
             alliance = Alliance.BLUE;
         }
 
-        telemetry.addData("Press X", "for BLUE");
-        telemetry.addData("Press B", "for RED");
-        telemetry.addData("Selected Alliance", alliance);
+        telemetry.addData("Press X", "for Blue");
+        telemetry.addData("Press B", "for Red");
+        telemetry.addData("Selected Alliance", alliance.getTelemetryHtml());
 
         if (gamepad1.a) {
             startingPosition = ShootingPosition.ACROSS_FIELD_AUTO;

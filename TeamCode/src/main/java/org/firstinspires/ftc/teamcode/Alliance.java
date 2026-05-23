@@ -15,4 +15,9 @@ public enum Alliance {
         if (this == RED) return BLUE;
         return RED;
     }
+
+    public String getTelemetryHtml() {
+        return "<font color=\"" + name().toLowerCase() + "\">" + name() + "</font>";
+    }
+
 }

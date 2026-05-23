@@ -92,7 +92,7 @@ public class MainTeleopMode extends OpMode {
 
         telemetry.addData("Press X", "for BLUE");
         telemetry.addData("Press B", "for RED");
-        telemetry.addData("Selected Alliance", alliance);
+        telemetry.addData("Selected Alliance", alliance.getTelemetryHtml());
     }
 
     @Override
@@ -139,8 +139,8 @@ public class MainTeleopMode extends OpMode {
         telemetry.addData("\nCHANGING SETTINGS - hold LB +",
                 "\n\tD-pad left/right: rack position adjust" +
                         "\n\tD-pad up/down: launch speed adjust" +
-                        "\n\tY and A: April tag aiming offset adjust");
-
+                        "\n\tY and A: April tag aiming offset adjust" +
+                        "\n\tX and B: Select alliance for auto aiming");
 
     }
 
@@ -166,6 +166,12 @@ public class MainTeleopMode extends OpMode {
             } else if (gamepad1.aWasPressed()) {
                 shootParams.aimingOffset -= 0.5;
             }
+
+            if (gamepad1.bWasPressed()) {
+                alliance = Alliance.RED;
+            } else if (gamepad1.xWasPressed()) {
+                alliance = Alliance.BLUE;
+            }
         } else { // LB is not pressed
             if (gamepad1.yWasPressed()) {
                 shootingPosition = ShootingPosition.AGAINST_GOAL;
@@ -178,6 +184,7 @@ public class MainTeleopMode extends OpMode {
     }
 
     private void logSettings() {
+        telemetry.addData("Selected alliance", alliance.getTelemetryHtml());
         telemetry.addData("Shooting position", shootingPosition.toString() + "\n");
 
         ShootParams shootParams = Objects.requireNonNull(shootParamsMap.get(shootingPosition));
