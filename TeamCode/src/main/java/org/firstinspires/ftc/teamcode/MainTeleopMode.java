@@ -35,6 +35,8 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -79,6 +81,7 @@ public class MainTeleopMode extends OpMode {
             shootParamsMap.put(p, params);
         }
 
+        telemetry.setDisplayFormat(Telemetry.DisplayFormat.HTML);
         telemetry.addData("Status", "Initialized");
     }
 
