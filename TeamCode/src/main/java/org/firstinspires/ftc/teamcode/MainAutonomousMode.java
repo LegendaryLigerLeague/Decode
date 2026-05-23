@@ -70,7 +70,7 @@ public class MainAutonomousMode extends OpMode {
         DRIVING_AWAY_FROM_GOAL,
         ROTATING,
         DRIVING_OFF_LINE,
-        COMPLETE;
+        COMPLETE
     }
 
     private AutonomousState autonomousState;
