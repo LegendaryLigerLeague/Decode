@@ -55,7 +55,7 @@ public class MainTeleopMode extends OpMode {
 
     private Alliance alliance = Alliance.RED;
 
-    private ShootingPosition shootingPosition = ShootingPosition.ACROSS_FIELD;
+    private ShootingPosition shootingPosition = ShootingPosition.ACROSS_FIELD_TELE;
     private final Map<ShootingPosition, ShootParams> shootParamsMap = new HashMap<>();
 
     @Override
@@ -165,7 +165,7 @@ public class MainTeleopMode extends OpMode {
             if (gamepad1.yWasPressed()) {
                 shootingPosition = ShootingPosition.AGAINST_GOAL;
             } else if (gamepad1.aWasPressed()) {
-                shootingPosition = ShootingPosition.ACROSS_FIELD;
+                shootingPosition = ShootingPosition.ACROSS_FIELD_TELE;
             } else if (gamepad1.bWasPressed()) {
                 shootingPosition = ShootingPosition.CENTER;
             }

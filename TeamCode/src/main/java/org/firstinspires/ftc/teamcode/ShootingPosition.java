@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
 public enum ShootingPosition {
-    AGAINST_GOAL(0.93, 0.8389, 0.0),
-    CENTER(1.3, 0.0666, 0.0),
-    ACROSS_FIELD(1.68, 0.0666, 0.0),
-    ACROSS_FIELD_AUTO(1.68, 0.0666, -2.6);
+    AGAINST_GOAL(1.05, 0.6445, 0.0),
+    CENTER(1.37, 0.2055, 0.0),
+    ACROSS_FIELD_TELE(1.60, 0.1222, -0.2),
+    ACROSS_FIELD_AUTO(1.64, 0.1222, -0.4655);
 
     public final double launchMotorSpeed, rackPosition, aimingOffset;
 
