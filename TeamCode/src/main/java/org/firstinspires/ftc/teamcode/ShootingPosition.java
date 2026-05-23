@@ -1,12 +1,16 @@
 package org.firstinspires.ftc.teamcode;
 
 public enum ShootingPosition {
-    AGAINST_GOAL, ACROSS_FIELD;
+    AGAINST_GOAL(1.05, 0.6445, 0.0),
+    CENTER(1.37, 0.2055, 0.0),
+    ACROSS_FIELD_TELE(1.60, 0.1222, -0.2),
+    ACROSS_FIELD_AUTO(1.64, 0.1222, -0.4655);
 
-    public ShootingPosition getOpposite() {
-        if (this == AGAINST_GOAL)
-            return ACROSS_FIELD;
-        else
-            return AGAINST_GOAL;
+    public final double launchMotorSpeed, rackPosition, aimingOffset;
+
+    ShootingPosition(double launchMotorSpeed, double rackPosition, double aimingOffset) {
+        this.launchMotorSpeed = launchMotorSpeed;
+        this.rackPosition = rackPosition;
+        this.aimingOffset = aimingOffset;
     }
 }
