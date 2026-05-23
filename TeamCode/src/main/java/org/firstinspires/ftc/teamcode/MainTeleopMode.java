@@ -53,13 +53,18 @@ public class MainTeleopMode extends OpMode {
     private RackSystem rackSystem;
     private AimingSystem aimingSystem;
 
-    private Alliance alliance = Alliance.RED;
+    private Alliance alliance;
+
+    private SaveData saveData;
 
     private ShootingPosition shootingPosition = ShootingPosition.ACROSS_FIELD_TELE;
     private final Map<ShootingPosition, ShootParams> shootParamsMap = new HashMap<>();
 
     @Override
     public void init() {
+        saveData = new SaveData(hardwareMap);
+        alliance = saveData.getAlliance(SaveKey.ALLIANCE, Alliance.RED);
+
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         launchSystem.setLaunchInterval(MIN_LAUNCH_INTERVAL);
 
@@ -182,4 +187,8 @@ public class MainTeleopMode extends OpMode {
         telemetry.addData("\nApril Tag Offset", shootParams.aimingOffset);
     }
 
+    @Override
+    public void stop() {
+        saveData.putAlliance(SaveKey.ALLIANCE, alliance);
+    }
 }

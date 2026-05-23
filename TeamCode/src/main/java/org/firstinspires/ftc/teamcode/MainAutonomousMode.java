@@ -74,11 +74,15 @@ public class MainAutonomousMode extends OpMode {
     }
 
     private AutonomousState autonomousState;
+    private SaveData saveData;
 
-    private Alliance alliance = Alliance.RED;
+    private Alliance alliance;
 
     @Override
     public void init() {
+        saveData = new SaveData(hardwareMap);
+        alliance = saveData.getAlliance(SaveKey.ALLIANCE, Alliance.RED);
+
         launchSystem = new LaunchSystem(hardwareMap, "launcher", "left_feeder", "right_feeder");
         launchSystem.setLaunchInterval(TIME_BETWEEN_SHOTS);
 
@@ -198,4 +202,8 @@ public class MainAutonomousMode extends OpMode {
         telemetry.update();
     }
 
+    @Override
+    public void stop() {
+        saveData.putAlliance(SaveKey.ALLIANCE, alliance);
+    }
 }
