@@ -162,7 +162,7 @@ public class MainAutonomousMode extends OpMode {
                         if (startingPosition == ShootingPosition.AGAINST_GOAL) {
                             autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
                         } else {
-                            autonomousState = AutonomousState.DRIVING_OFF_LINE;
+                            autonomousState = AutonomousState.ROTATING;
                         }
                     }
                 }
@@ -177,9 +177,9 @@ public class MainAutonomousMode extends OpMode {
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -45;
+                    robotRotationAngle = startingPosition == ShootingPosition.AGAINST_GOAL ? -45: 45;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 45;
+                    robotRotationAngle = startingPosition == ShootingPosition.AGAINST_GOAL ? 45: -45;
                 }
 
                 if (driveSystem.rotateIncrementally(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES, 1)) {
