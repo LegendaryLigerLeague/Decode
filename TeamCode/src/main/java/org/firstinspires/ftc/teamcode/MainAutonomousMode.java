@@ -162,7 +162,7 @@ public class MainAutonomousMode extends OpMode {
                         if (startingPosition == ShootingPosition.AGAINST_GOAL) {
                             autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
                         } else {
-                            autonomousState = AutonomousState.ROTATING;
+                            autonomousState = AutonomousState.DRIVING_OFF_LINE;
                         }
                     }
                 }
